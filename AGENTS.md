@@ -10,7 +10,7 @@
 ## 하네스 불변 규약 (역할·스킬 수정 시에도 유지)
 
 1. **모든 텍스트 in-image 베이크** — 말풍선·한글 대사는 이미지 생성 시 함께 그린다. HTML 오버레이·후작업 합성 금지. 부정 프롬프트는 `no text`가 아니라 `no English/gibberish/misspelled text`.
-2. **codex 전역 동시 세션 ≤5** — 렌더는 번들 스크립트 `.zcode/skills/webtoon-panel-render/scripts/codex_imagegen_batch.sh`로만 수행하고, panel-artist는 순차 디스패치한다.
+2. **렌더는 번들 디스패처 경유 + 동시성 ≤5** — 렌더는 `.zcode/skills/webtoon-panel-render/scripts/render_batch.sh`로만 수행한다. 백엔드는 codex(기본) 또는 zai(Z.ai GLM-Image, `ZAI_API_KEY`), 선택은 사용자 지정 > `WEBTOON_RENDERER` > auto 순. **한 회차는 한 백엔드로 끝까지.** panel-artist는 순차 디스패치한다.
 3. **레퍼런스 시트 선행** — 패널 렌더 전 `_workspace/04_visual/refs/`를 확정한다(시리즈 자산, 후속 회차 재사용).
 4. **생성-검증 루프** — panel-validator 6축 통과 없이 조립으로 넘기지 않는다. 패널당 재생성 최대 3회, 단계별 루프 최대 2회.
 5. **감사 추적** — 모든 중간 산출물을 `_workspace/`에 보존한다. 삭제하지 않는다.
@@ -24,3 +24,4 @@
 ## 변경 이력
 
 - 2026-09-12: claude-code용 하네스를 ZCode(GLM)용으로 전환. `.claude/` → `.zcode/`, TeamCreate/TaskCreate 팀 운영 → Agent 도구 서브에이전트 디스패치, `model: opus` 제거, codex 배치 스크립트 번들화(기존 `~/.claude/skills/codex-image` 의존 제거).
+- 2026-09-12: 렌더 백엔드 선택 추가 — codex 외에 Z.ai GLM-Image API(`zai_imagegen_batch.sh`) 지원. 진입점은 `render_batch.sh` 디스패처(사용자 지정 > `WEBTOON_RENDERER` > auto). 한 회차는 한 백엔드로 끝까지 렌더.

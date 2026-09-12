@@ -1,6 +1,6 @@
 ---
 name: webtoon-orchestrator
-description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오케스트레이터. 인기 웹툰 트렌드 조사 → 대사 위주·고긴장·매 회차 반전 시나리오 작성 → 캐릭터 다각도 레퍼런스 시트를 먼저 렌더 → 회차당 50+ 패널을 말풍선·한글 대사 in-image 베이크로 codex-image 동시 5장 병렬 렌더 → panel-validator 생성-검증 루프로 기준 만족까지 재생성 → 세로 스크롤 뷰어 조립까지 전 과정을 단계별 서브에이전트 디스패치로 운영한다. 트리거: '웹툰 만들어/제작', '웹툰 한 화/회차 만들어', '웹툰 시나리오부터 이미지까지', '웹툰 에피소드 제작', '웹툰 하네스 실행'. 후속 작업: '다음 화 만들어', '이 회차 다시/수정/보완', '반전 더 강하게', '패널 다시 그려', '특정 단계만 다시 실행', '이전 결과 기반 개선' 등에도 반드시 이 스킬을 사용. 단순 웹툰 추천/감상은 직접 응답."
+description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오케스트레이터. 인기 웹툰 트렌드 조사 → 대사 위주·고긴장·매 회차 반전 시나리오 작성 → 캐릭터 다각도 레퍼런스 시트를 먼저 렌더 → 회차당 50+ 패널을 말풍선·한글 대사 in-image 베이크로 동시 5장 병렬 렌더(백엔드: codex 또는 Z.ai GLM-Image 선택) → panel-validator 생성-검증 루프로 기준 만족까지 재생성 → 세로 스크롤 뷰어 조립까지 전 과정을 단계별 서브에이전트 디스패치로 운영한다. 트리거: '웹툰 만들어/제작', '웹툰 한 화/회차 만들어', '웹툰 시나리오부터 이미지까지', '웹툰 에피소드 제작', '웹툰 하네스 실행'. 후속 작업: '다음 화 만들어', '이 회차 다시/수정/보완', '반전 더 강하게', '패널 다시 그려', '특정 단계만 다시 실행', '이전 결과 기반 개선' 등에도 반드시 이 스킬을 사용. 단순 웹툰 추천/감상은 직접 응답."
 ---
 
 # Webtoon Orchestrator — 웹툰 제작 팀 조율 (ZCode/GLM)
@@ -31,7 +31,8 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 - **순차**: 의존 있는 작업은 상류 완료 통지를 받은 뒤 스폰하고, 스폰 프롬프트에 상류 산출물 경로를 명시한다.
 - **작업 보드**: `TodoWrite`로 현재 Phase와 진행 중인 서브에이전트 작업을 추적한다(작업 완료마다 갱신).
 - **중계**: 서브에이전트끼리 직접 통신하지 않는다. 동료에게 전달할 내용은 보고에 담기고, 네가 다음 스폰 프롬프트에 넣어 중계한다. 백그라운드 서브에이전트에 후속 지시(REGEN 재렌더 등)가 필요하면 `SendMessage`를 쓴다.
-- **렌더 동시성**: codex 전역 동시 세션 ≤5는 번들 스크립트 `.zcode/skills/webtoon-panel-render/scripts/codex_imagegen_batch.sh`가 강제한다. **panel-artist-a/b/c를 동시에 띄우지 않는다** — 반드시 한 명씩 순차 디스패치하고, 완료 보고를 받고 다음을 띄운다. 소량(1~5장) REGEN은 서브에이전트 없이 네가 직접 스크립트를 실행해도 된다.
+- **렌더 동시성**: 렌더 백엔드 동시 세션 ≤5는 번들 스크립트 `.zcode/skills/webtoon-panel-render/scripts/render_batch.sh`가 강제한다. **panel-artist-a/b/c를 동시에 띄우지 않는다** — 반드시 한 명씩 순차 디스패치하고, 완료 보고를 받고 다음을 띄운다. 소량(1~5장) REGEN은 서브에이전트 없이 네가 직접 스크립트를 실행해도 된다.
+- **렌더 백엔드**: codex(ChatGPT OAuth) 또는 zai(Z.ai GLM-Image, `ZAI_API_KEY`). 사용자 지정 > `WEBTOON_RENDERER` > auto(codex 로그인 우선, 없으면 ZAI_API_KEY) 순으로 정한다. **한 회차는 한 백엔드로 끝까지** 렌더한다 — 중간 전환하면 작화 스타일이 흔들린다.
 - **모델**: 별도 지정 없음 — 세션 모델(GLM)로 전 구간 실행한다.
 
 ## 에이전트 구성 (27명, 4팀)
@@ -56,7 +57,7 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 | | ref-sheet-artist | 캐릭터 다각도/표정 레퍼런스 시트(패널 전 선행) | webtoon-panel-render | 04_visual/refs/*.png, refs/INDEX.md |
 | | panel-director | 50+ 패널 샷리스트(scene_id/location) | webtoon-panel-breakdown | 04_visual/ep{NN}_shotlist.md |
 | | letterer | in-image 말풍선/대사 베이크 명세 | webtoon-assembly | 04_visual/ep{NN}_lettering.md |
-| | prompt-smith | 패널별 codex 프롬프트(베이크+장소+레퍼런스) | webtoon-panel-render | 04_visual/ep{NN}_prompts.md |
+| | prompt-smith | 패널별 이미지 생성 프롬프트(베이크+장소+레퍼런스) | webtoon-panel-render | 04_visual/ep{NN}_prompts.md |
 | | panel-artist-a | scene 그룹 A 렌더 | webtoon-panel-render | 05_panels/ep{NN}/panel_*.png |
 | | panel-artist-b | scene 그룹 B 렌더 | webtoon-panel-render | 05_panels/ep{NN}/panel_*.png |
 | | panel-artist-c | scene 그룹 C 렌더 | webtoon-panel-render | 05_panels/ep{NN}/panel_*.png |
@@ -84,7 +85,7 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 1. 사용자 입력 분석 — 회차 번호 {NN}, 장르 방향(있으면), 제약(수위·길이·톤).
 2. `_workspace/00_input/brief.md`에 입력·회차 번호·제약을 기록.
 3. 작업 디렉토리 보장: `mkdir -p _workspace/{00_input,01_research,02_story,03_episode,04_visual,05_panels,06_assembly,RELEASE}`.
-4. **codex 사전 점검**(렌더가 포함되는 실행일 때): `codex --version`, `codex login status` 확인. 미로그인이면 사용자에게 `codex login` 실행을 요청.
+4. **렌더 백엔드 사전 점검**(렌더가 포함되는 실행일 때): 백엔드를 정한다 — 사용자가 "codex로"/"GLM·zai로" 지정했으면 그 값, 아니면 `WEBTOON_RENDERER`, 없으면 auto(codex 로그인 우선, 없으면 `ZAI_API_KEY`). codex면 `codex --version`·`codex login status` 확인 후 미로그인 시 사용자에게 `codex login` 요청. zai면 `ZAI_API_KEY` 확인 후 없으면 [Z.ai API 키](https://z.ai/model-api) 발급·설정을 요청. zai는 이미지 1장당 과금임을 미리 안내.
 
 ### Phase 2: 트렌드 리서치 (리서치팀)
 
@@ -105,7 +106,7 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 
 ### Phase 4: 비주얼 프로덕션 (비주얼팀)
 
-**codex 동시 세션 ≤ 5 엄수 — 배치 스크립트가 강제하고, 아티스트는 순차 디스패치.**
+**렌더 동시성 ≤ 5 엄수 — 배치 스크립트가 강제하고, 아티스트는 순차 디스패치. 정한 백엔드(codex/zai)로 끝까지 렌더한다.**
 
 1. art-director 스폰(script_final·characters 경로 전달) → `style-bible.md`(작화·**장소 토큰 LOC_***·**말풍선 시각 규약** 포함) + `character-sheets.md`(일관성 토큰+레퍼런스 사양).
 2. **레퍼런스 시트 먼저(일관성 SSOT)**: ref-sheet-artist 스폰(character-sheets·style-bible 경로 전달) → 주요 캐릭터 다각도/표정 레퍼런스를 배치 스크립트로 렌더(동시 ≤5) → `04_visual/refs/` 확정 + INDEX.md. **후속 회차는 refs/가 이미 있으면 스킵하고 기존 INDEX.md를 재사용.** 패널 렌더는 레퍼런스 확정 후 시작.
@@ -152,6 +153,9 @@ panel_*.png(말풍선 포함) → index.html(오버레이 없음) → qa_report 
 | 서브에이전트 실패/비정상 종료 | 완료 통지 미수신 또는 비정상 보고 시, 같은 스폰 프롬프트에 "이전 시도가 실패했다"를 덧붙여 재스폰. 산출물 파일이 일부 있으면 경로를 알려 부분 재사용 유도 |
 | 서브에이전트가 임무를 이탈한 보고 반환 | 스폰 프롬프트에 임무·산출 경로를 더 구체적으로 명시하고 재스폰. 2회 반복되면 해당 작업을 더 작은 단위로 쪼개 스폰 |
 | codex 렌더 0바이트/손상 | 배치 스크립트 요약의 FAIL 패널만 재렌더(배치 전체 금지). 2회 실패 시 경고 후 통과, 보고서 명시 |
+| zai 렌더 실패(API 오류·content filter·다운로드 실패) | 동일하게 FAIL 패널만 재렌더. content filter 반복 차단 패널은 프롬프트에서 수위 높은 표현을 완곡화해 재시도, 그래도 실패하면 ACCEPT-FLAG 대신 해당 패널 대사·연출 조정을 letterer/prompt-smith에 요청 |
+| zai 요청 한도(429) 감지 | CONCURRENCY를 2~3으로 낮춰 재실행(스크립트의 CONCURRENCY env). 실패 패널만 남은 배치로 |
+| 백엔드 중간 전환 요청 | 한 회차 안에서는 거절 — 작화 일관성이 무너진다. 다음 회차부터 전환하도록 안내 |
 | 패널 md5 중복(서로 다른 패널이 동일 이미지) | 스크립트가 DUP으로 감지 → 중복 패널 삭제 후 각각 단독 재렌더(EP01 실제 발생) |
 | 배경 급변(도로→실내 등) | panel-validator C2 REGEN → prompt-smith가 장소 토큰(LOC_*) 강화 후 그 패널만 재렌더 |
 | 한글 말풍선 깨짐/오탈자 | panel-validator C3 REGEN → 텍스트 짧게·따옴표·굵게로 보강 재렌더. 3회 실패 시 가장 정확한 버전 ACCEPT-FLAG + 보고서 명시 |
@@ -166,7 +170,7 @@ panel_*.png(말풍선 포함) → index.html(오버레이 없음) → qa_report 
 
 ### 정상 흐름
 1. 사용자: "트렌드 반영해서 웹툰 1화 만들어줘."
-2. Phase 1: brief 기록, `_workspace/` 생성, codex 로그인 확인.
+2. Phase 1: brief 기록, `_workspace/` 생성, 렌더 백엔드(codex/zai) 확인.
 3. Phase 2: 조사자 4명 병렬 스폰 → synthesizer → trend-brief.md.
 4. Phase 3: 시나리오 파이프라인 순차+병렬 스폰 → script_final.md (반전 1개+, 50+ 패널 분량).
 5. Phase 4: art-director → 레퍼런스 시트 선행 → 콘티·레터링 병렬 → prompts → panel-artist-a/b/c 순차 디스패치(각 5장 웨이브, 스크립트가 무결성 검사) → panel-validator 6축 검증-재생성 루프로 전 패널 통과 → validation.md.

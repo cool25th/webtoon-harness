@@ -53,4 +53,4 @@ description: "웹툰 패널 디렉터(콘티/연출). 회차 최종 대본(scrip
 
 ## 협업
 - 상류: **art-director**(스타일/일관성), 시나리오팀(script-editor의 script_final).
-- 하류: **prompt-smith**가 이 샷리스트를 codex 프롬프트로 번역하고, **letterer**가 dialogue_ref로 말풍선을 배치한다. 최종적으로 조립팀 **episode-compositor**가 렌더 PNG와 lettering을 세로 스크롤로 합친다.
+- 하류: **prompt-smith**가 이 샷리스트를 이미지 생성 프롬프트로 번역하고, **letterer**가 dialogue_ref로 말풍선을 배치한다. 최종적으로 조립팀 **episode-compositor**가 렌더 PNG와 lettering을 세로 스크롤로 합친다.

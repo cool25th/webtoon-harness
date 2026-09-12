@@ -1,15 +1,18 @@
 ---
 name: webtoon-panel-render
-description: "웹툰 패널 이미지를 codex-image(codex exec image_generation)로 동시 5장씩 병렬 렌더링하는 스킬. 패널 렌더 전 캐릭터 다각도 레퍼런스 시트를 먼저 렌더해 일관성 기준을 만들고, 패널 프롬프트 목록(ep{NN}_prompts.md)에 일관성 토큰·레퍼런스 앵커·씬 장소 토큰·in-image 말풍선(한글 대사 포함)을 주입해 배치 생성하며, panel-validator의 생성-검증 루프로 기준 만족까지 재렌더한다. codex 전역 동시 세션 5개 한도를 지키고 0바이트·손상·md5 중복 PNG를 재시도한다. '패널 렌더링', '웹툰 이미지 생성', '레퍼런스 시트', '패널 이미지 배치 생성', '50장 그리기', 'codex로 패널 그려', 그리고 후속 작업 '패널 다시 그려/재렌더/수정/일부만 다시'에도 반드시 이 스킬을 사용. 단일 단발 이미지나 정밀 마스킹 편집은 이 하네스의 범위가 아니다(codex를 직접 호출)."
+description: "웹툰 패널 이미지를 선택한 렌더 백엔드(codex exec image_generation 또는 Z.ai GLM-Image API)로 동시 5장씩 병렬 렌더링하는 스킬. 패널 렌더 전 캐릭터 다각도 레퍼런스 시트를 먼저 렌더해 일관성 기준을 만들고, 패널 프롬프트 목록(ep{NN}_prompts.md)에 일관성 토큰·레퍼런스 앵커·씬 장소 토큰·in-image 말풍선(한글 대사 포함)을 주입해 배치 생성하며, panel-validator의 생성-검증 루프로 기준 만족까지 재렌더한다. 어느 백엔드든 전역 동시 세션 5개 한도를 지키고 0바이트·손상·md5 중복 PNG를 재시도한다. '패널 렌더링', '웹툰 이미지 생성', '레퍼런스 시트', '패널 이미지 배치 생성', '50장 그리기', 'codex로 패널 그려', 'GLM으로/zai로 패널 그려', 그리고 후속 작업 '패널 다시 그려/재렌더/수정/일부만 다시'에도 반드시 이 스킬을 사용. 단일 단발 이미지나 정밀 마스킹 편집은 이 하네스의 범위가 아니다."
 ---
 
 # Webtoon Panel Render — 레퍼런스 → 베이크 렌더 → 검증 루프
 
-웹툰 한 회차의 50+ 패널을 codex-image로 **동시 5장씩** 빠르게 렌더링하는 스킬. prompt-smith가 만든 패널 프롬프트 목록을 입력으로, 일관성을 지키며 PNG를 양산하고 검증한다.
+웹툰 한 회차의 50+ 패널을 선택한 렌더 백엔드로 **동시 5장씩** 빠르게 렌더링하는 스킬. prompt-smith가 만든 패널 프롬프트 목록을 입력으로, 일관성을 지키며 PNG를 양산하고 검증한다.
 
-이 스킬은 자체 번들 배치 스크립트로 렌더를 수행한다 — 외부 스킬·외부 경로 의존이 없다.
+이 스킬은 자체 번들 배치 스크립트로 렌더를 수행한다 — 외부 스킬·외부 경로 의존이 없다. 렌더 백엔드는 둘 중 하나:
 
-- **배치 스크립트**: `.zcode/skills/webtoon-panel-render/scripts/codex_imagegen_batch.sh` — 임의 개수 항목을 codex exec로 동시 5장 웨이브 실행, 항목당 타임아웃 감시, 완료 후 0바이트/손상/**md5 중복** 자동 검사·요약 보고.
+- **codex**(ChatGPT OAuth 필요) — `scripts/codex_imagegen_batch.sh`
+- **zai**(Z.ai GLM-Image API, `ZAI_API_KEY` 필요) — `scripts/zai_imagegen_batch.sh`. 기본 모델 `glm-image`, 기본 크기 `1056x1568`(세로 스크롤 패널). `ZAI_IMAGE_QUALITY=standard`로 고속 모드.
+- **선택**: 두 스크립트를 직접 쓰지 말고 디스패처 `scripts/render_batch.sh`를 호출한다. `WEBTOON_RENDERER` 환경변수(`codex`|`zai`|`auto`, 기본 `auto`)로 백엔드를 고른다 — auto는 codex 로그인을 먼저 확인하고, 없으면 `ZAI_API_KEY`로 zai를 쓴다. 사용자가 "codex로 그려"/"GLM·zai로 그려"라고 백엔드를 지정하면 그 값을 쓴다.
+- 두 백엔드 스크립트는 인터페이스가 동일하다: 임의 개수 항목을 동시 5장 웨이브 실행, 항목당 타임아웃 감시, 완료 후 0바이트/손상/**md5 중복** 자동 검사·요약 보고.
 
 핵심 4원칙(EP01 제작 피드백 반영):
 1. **레퍼런스 먼저(일관성).** 패널을 그리기 전에 캐릭터 다각도/표정 레퍼런스 시트를 먼저 렌더해 외형 기준(SSOT)을 확정한다. 텍스트 토큰만으로는 매번 다른 얼굴이 나온다.
@@ -19,13 +22,21 @@ description: "웹툰 패널 이미지를 codex-image(codex exec image_generation
 
 ## 사전 점검 (회차당 1회)
 
+먼저 렌더 백엔드를 정한다. 사용자 지정("codex로 그려" / "GLM·zai로 그려") > `WEBTOON_RENDERER` > auto 순으로 따른다.
+
+**codex 백엔드일 때:**
+
 ```bash
 codex --version                                # 0.128+ 권장
 codex login status                             # "Logged in using ChatGPT" 확인
 codex features list | grep image_generation    # stable/true 확인
 ```
 
-미로그인이면 사용자에게 `codex login` 실행을 요청한다. 렌더 도중 멈추지 않도록 시작 전에 확인한다.
+미로그인이면 사용자에게 `codex login` 실행을 요청한다.
+
+**zai 백엔드일 때:** `ZAI_API_KEY` 설정 여부만 확인한다(`[ -n "$ZAI_API_KEY" ]`). 없으면 사용자에게 [Z.ai API 키](https://z.ai/model-api) 발급·`export ZAI_API_KEY=...` 설정을 요청한다. 기본값: 모델 `glm-image`, 크기 `1056x1568`. 요청당 과금이므로 50패널 = 50요청이다.
+
+렌더 도중 멈추지 않도록 시작 전에 확인한다.
 
 ## 0단계 — 캐릭터 레퍼런스 시트 먼저 렌더 (ref-sheet-artist)
 
@@ -71,14 +82,14 @@ codex features list | grep image_generation    # stable/true 확인
 
 ## 핵심 — 동시 5장 배치 렌더링
 
-**codex 전역 동시 세션은 5개를 절대 넘기지 않는다.** ChatGPT 플랜의 동시 요청 한도 때문에 6개+는 큐잉으로 응답이 들쭉날쭉해지고 일부 작업이 비정상적으로 길어진다. panel-artist가 3명이어도 **세 아티스트의 codex exec 동시 실행 총합이 5 이하**가 되도록 오케스트레이터가 렌더 패스를 순차 디스패치한다.
+**렌더 백엔드 동시 세션은 5개를 절대 넘기지 않는다.** codex는 ChatGPT 플랜의 동시 요청 한도 때문에 6개+는 큐잉으로 응답이 들쭉날쭉해지고, zai도 API 속도 제한이 있다. panel-artist가 3명이어도 **세 아티스트의 렌더 동시 실행 총합이 5 이하**가 되도록 오케스트레이터가 렌더 패스를 순차 디스패치한다. 번들 스크립트가 한도를 강제하므로(`CONCURRENCY>5` 거부), 항상 스크립트 경유로 렌더한다.
 
-### 방법 A (권장) — 번들 배치 스크립트
+### 방법 A (권장) — 번들 배치 스크립트 (디스패처 경유)
 
-번들 배치 스크립트가 임의 개수를 5장씩 자동 배치하고, 각 항목 타임아웃 감시(기본 600초)와 완료 후 무결성 검사(0바이트/손상/md5 중복)까지 수행한다. **프로젝트 루트(`_workspace/`가 있는 디렉토리)에서 실행**한다. 한 회차 전체(또는 한 scene 그룹)를 한 번에 넘긴다:
+`render_batch.sh` 디스패처가 백엔드를 골라 임의 개수를 5장씩 자동 배치하고, 각 항목 타임아웃 감시와 완료 후 무결성 검사(0바이트/손상/md5 중복)까지 수행한다. **프로젝트 루트(`_workspace/`가 있는 디렉토리)에서 실행**한다. 한 회차 전체(또는 한 scene 그룹)를 한 번에 넘긴다:
 
 ```bash
-.zcode/skills/webtoon-panel-render/scripts/codex_imagegen_batch.sh \
+.zcode/skills/webtoon-panel-render/scripts/render_batch.sh \
   _workspace/05_panels/ep{NN} \
   "<panel_001 프롬프트>::panel_001.png" \
   "<panel_002 프롬프트>::panel_002.png" \
@@ -90,7 +101,7 @@ codex features list | grep image_generation    # stable/true 확인
 - 프롬프트가 길면 셸 따옴표 이스케이프가 위험하니 **매니페스트 파일 모드**를 쓴다(한 줄 = `프롬프트::파일명`, `#` 주석 가능):
 
 ```bash
-.zcode/skills/webtoon-panel-render/scripts/codex_imagegen_batch.sh \
+.zcode/skills/webtoon-panel-render/scripts/render_batch.sh \
   --from-file _workspace/04_visual/ep{NN}_manifest.txt \
   _workspace/05_panels/ep{NN}
 ```
@@ -184,8 +195,9 @@ quality-reviewer가 FIX/REDO로 지정한 패널만 재렌더한다. 전체를 �
 
 ## 비용 주의
 
-- 각 codex 호출은 독립 세션 → 토큰·플랜 메시지 한도를 N배 소모한다.
-- 헤비 배치(50장+) 전 `codex login status`로 플랜 잔량을 확인한다.
+- **codex**: 각 호출이 독립 세션 → 토큰·플랜 메시지 한도를 N배 소모한다. 헤비 배치(50장+) 전 `codex login status`로 플랜 잔량을 확인한다.
+- **zai**: 이미지 1장당 과금(GLM-Image 기준 약 $0.01~0.03/장). 50패널 = 50요청이므로 시작 전 예상 비용을 사용자에게 알린다.
+- 백엔드를 바꾸면 작화 스타일이 미묘하게 달라진다. 한 회차는 처음 시작한 백엔드로 끝까지 렌더한다(중간 전환 금지).
 
 ## 출력
 

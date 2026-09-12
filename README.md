@@ -145,7 +145,22 @@ cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md /path/to/your-project/
 ### 요구 사항
 
 - **ZCode** (GLM 기반 에이전트 실행 환경 — 서브에이전트 스폰·스킬 실행)
-- **codex CLI** (`codex exec`의 `image_generation` 툴) — 패널 이미지 병렬 렌더. ChatGPT OAuth 인증 필요. codex 전역 동시 세션은 **최대 5개**를 지키며, 하네스 번들 배치 스크립트(`.zcode/skills/webtoon-panel-render/scripts/codex_imagegen_batch.sh`)가 이 한도를 강제합니다.
+- **이미지 렌더 백엔드 — 둘 중 하나** (하네스 번들 배치 스크립트가 동시성 ≤5·타임아웃·무결성 검사를 강제합니다):
+  - **codex CLI** (`codex exec`의 `image_generation` 툴) + `codex login` — ChatGPT OAuth 인증 필요
+  - **Z.ai API 키** — `export ZAI_API_KEY=...` ([z.ai/model-api](https://z.ai/model-api)에서 발급, GLM-Image 모델 사용)
+
+---
+
+## 🎨 렌더 백엔드 선택 (codex ↔ Z.ai GLM-Image)
+
+패널 이미지 렌더는 두 백엔드 중 하나로 진행됩니다. codex 없이 ZCode(GLM) 생태계 안에서만 끝내려면 zai 백엔드를 고르면 됩니다.
+
+| 백엔드 | 준비물 | 특징 |
+|--------|--------|------|
+| **codex** (기본) | codex CLI + `codex login` | 원본 하네스부터 쓰던 경로. 플랜 메시지 한도를 세션 단위로 소모 |
+| **zai** | [Z.ai API 키](https://z.ai/model-api) + `export ZAI_API_KEY=...` | GLM-Image API 직 호출. 이미지 1장당 과금(약 $0.01~0.03/장). 기본 `glm-image` · `1056x1568`(세로 스크롤 패널). `ZAI_IMAGE_QUALITY=standard`로 고속 저비용 모드 |
+
+**선택 규칙**: 사용자 발언("codex로 그려" / "GLM·zai로 그려") > `WEBTOON_RENDERER` 환경변수(`codex`|`zai`|`auto`) > auto(codex 로그인을 먼저 확인하고, 없으면 `ZAI_API_KEY`). **한 회차는 한 백엔드로 끝까지** 렌더합니다 — 중간에 바꾸면 작화 스타일이 흔들립니다. 검증 루프(0바이트/손상/md5 중복 → panel-validator 6축)는 백엔드와 무관하게 동일하게 적용됩니다.
 
 > 💡 이 저장소의 인포그래픽들은 `codex-image`로 16:9 비율 5장을 동시 병렬 렌더해 제작했습니다.
 
