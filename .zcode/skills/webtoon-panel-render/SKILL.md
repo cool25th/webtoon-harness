@@ -9,7 +9,7 @@ description: "웹툰 패널 이미지를 선택한 렌더 백엔드(codex exec i
 
 이 스킬은 자체 번들 배치 스크립트로 렌더를 수행한다 — 외부 스킬·외부 경로 의존이 없다. 렌더 백엔드는 셋 중 하나:
 
-- **antigravity**(권장, 별도 키 불필요) — Google Antigravity CLI(agy)의 헤드리스 에이전트. Google 계정 구독 쿼터 소비, 키체인 자동 로그인. `scripts/antigravity_imagegen_batch.sh`. 설치: `curl -fsSL https://antigravity.google/cli/install.sh | bash`
+- **antigravity**(기본, 별도 키 불필요) — Google Antigravity CLI(agy)의 헤드리스 에이전트. Google 계정 구독 쿼터 소비, 키체인 자동 로그인. `scripts/antigravity_imagegen_batch.sh`. 설치: `curl -fsSL https://antigravity.google/cli/install.sh | bash`
 - **codex**(ChatGPT OAuth 필요) — `scripts/codex_imagegen_batch.sh`
 - **zai**(Z.ai GLM-Image API, `ZAI_API_KEY` 필요) — `scripts/zai_imagegen_batch.sh`. 기본 모델 `glm-image`, 기본 크기 `1056x1568`(세로 스크롤 패널). `ZAI_IMAGE_QUALITY=standard`로 고속 모드.
 - **선택**: 세 스크립트를 직접 쓰지 말고 디스패처 `scripts/render_batch.sh`를 호출한다. `WEBTOON_RENDERER` 환경변수(`antigravity`|`codex`|`zai`|`auto`, 기본 `auto`)로 백엔드를 고른다 — auto는 agy 설치 → antigravity, codex 로그인 → codex, `ZAI_API_KEY` → zai 순으로 고른다. 사용자가 백엔드를 지정하면 그 값을 쓴다.

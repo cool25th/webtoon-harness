@@ -14,6 +14,7 @@
 
 - **27 에이전트 / 4 단계 팀**: 리서치 → 시나리오 → 비주얼 → 조립검수. 각 Phase마다 팀을 재구성하며 운영합니다.
 - **GLM 네이티브 오케스트레이션**: Claude Code 전용 팀 기능 없이, ZCode의 서브에이전트 디스패치(Agent 도구)만으로 27개 역할을 운영합니다. 전 구간 GLM으로 실행됩니다.
+- **🎨 렌더 백엔드를 codex → Antigravity로 교체**: 원본의 codex 의존을 걷어내고, Google Antigravity CLI(agy)를 기본 렌더 백엔드로 적용했습니다. 별도 API 키·추가 과금 없이 Google 구독 쿼터만으로 패널을 렌더하며, 이미지 내 한글 텍스트 품질도 우수합니다(실측: 한글 말풍선 2장 렌더 성공). codex·Z.ai API는 대안 백엔드로 남겨두었습니다.
 - **레퍼런스 시트 선행 렌더**: 캐릭터 다각도·표정 레퍼런스를 먼저 렌더해 회차 간 외형 일관성의 단일 진실원천(SSOT)을 확보합니다.
 - **in-image 말풍선 베이크**: 말풍선과 한글 대사를 이미지 생성 시 함께 그려, 별도 텍스트 오버레이 없이 조립합니다.
 - **병렬 렌더 + 생성-검증 루프**: 번들 배치 스크립트로 동시 5장씩 배치 렌더하고, `panel-validator`가 6축 검증 후 기준 미달 패널만 재생성합니다.
@@ -37,7 +38,7 @@
     ├── webtoon-trend-research/  # 트렌드 리서치 방법론
     ├── webtoon-scenario/        # 시나리오·대본 집필
     ├── webtoon-panel-breakdown/ # 패널 분해·스타일/일관성 토큰
-    ├── webtoon-panel-render/    # codex 병렬 렌더 (+ 번들 배치 스크립트 scripts/codex_imagegen_batch.sh)
+    ├── webtoon-panel-render/    # 이미지 병렬 렌더 (기본 antigravity, codex/zai 선택 — 번들 배치 스크립트 포함)
     └── webtoon-assembly/        # 세로 스크롤 조립·검수·패키징
 AGENTS.md                        # ZCode 워크스페이스 지침 (하네스 불변 규약)
 ```
@@ -145,24 +146,24 @@ cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md /path/to/your-project/
 ### 요구 사항
 
 - **ZCode** (GLM 기반 에이전트 실행 환경 — 서브에이전트 스폰·스킬 실행)
-- **이미지 렌더 백엔드 — 셋 중 하나** (하네스 번들 배치 스크립트가 동시성 ≤5·타임아웃·무결성 검사를 강제합니다):
-  - **Antigravity CLI** (권장) — `curl -fsSL https://antigravity.google/cli/install.sh | bash`. Google 계정 구독 쿼터 사용, 별도 API 키 불필요
-  - **codex CLI** (`codex exec`의 `image_generation` 툴) + `codex login` — ChatGPT OAuth 인증 필요
-  - **Z.ai API 키** — `export ZAI_API_KEY=...` ([z.ai/model-api](https://z.ai/model-api)에서 발급, GLM-Image 모델 사용)
+- **이미지 렌더 백엔드 — 셋 중 하나** (기본: Antigravity. 하네스 번들 배치 스크립트가 동시성 ≤5·타임아웃·무결성 검사를 강제합니다):
+  - **Antigravity CLI** (기본) — `curl -fsSL https://antigravity.google/cli/install.sh | bash`. Google 계정 구독 쿼터 사용, 별도 API 키 불필요
+  - **codex CLI** (대안, `WEBTOON_RENDERER=codex`) — `codex exec`의 `image_generation` 툴 + `codex login` 필요
+  - **Z.ai API 키** (대안, `WEBTOON_RENDERER=zai`) — `export ZAI_API_KEY=...` ([z.ai/model-api](https://z.ai/model-api)에서 발급, GLM-Image 모델 사용)
 
 ---
 
-## 🎨 렌더 백엔드 선택 (antigravity ↔ codex ↔ Z.ai GLM-Image)
+## 🎨 렌더 백엔드: codex 대신 Antigravity 적용
 
-패널 이미지 렌더는 세 백엔드 중 하나로 진행됩니다. codex도, 별도 과금도 없이 Antigravity(Google 구독)만으로 전 파이프라인을 끝낼 수 있습니다.
+**이 fork는 원본의 codex 렌더를 Antigravity(Google)로 교체해 기본 적용합니다.** codex CLI 재로그인도, 별도 API 키 발급·충전도 없이 Google 구독 쿼터만으로 전 파이프라인이 끝납니다.
 
 | 백엔드 | 준비물 | 특징 |
 |--------|--------|------|
-| **antigravity** (권장) | [Antigravity CLI](https://antigravity.google/docs/cli/install/) 설치 | Google 계정 구독 쿼터 사용, 별도 키·과금 불필요. 항목당 에이전트 실행이라 느리고(수십 초~수 분) Nano Banana 계열 이미지 생성 — 이미지 내 한글 텍스트 품질이 우수 |
-| **codex** | codex CLI + `codex login` | 원본 하네스부터 쓰던 경로. 플랜 메시지 한도를 세션 단위로 소모 |
-| **zai** | [Z.ai API 키](https://z.ai/model-api) + `export ZAI_API_KEY=...` | GLM-Image API 직 호출. 이미지 1장당 과금(약 $0.01~0.015/장). 기본 `glm-image` · `1056x1568`(세로 스크롤 패널) |
+| **antigravity** ⭐ **기본 적용** | [Antigravity CLI](https://antigravity.google/docs/cli/install/) 설치 (`curl -fsSL https://antigravity.google/cli/install.sh \| bash`) | Google 계정 구독 쿼터 사용, 별도 키·과금 불필요. 항목당 에이전트 실행이라 느리고(수십 초~수 분) Nano Banana 계열 이미지 생성 — 이미지 내 한글 텍스트 품질이 우수(실측: 한글 말풍선 2장 렌더, 1장 대사 완벽·1장 자모 1개 오차) |
+| **codex** (대안) | codex CLI + `codex login` | 원본 하네스의 렌더 방식. 플랜 메시지 한도를 세션 단위로 소모. 쓰려면 `WEBTOON_RENDERER=codex` |
+| **zai** (대안) | [Z.ai API 키](https://z.ai/model-api) + `export ZAI_API_KEY=...` | GLM-Image API 직 호출. 이미지 1장당 과금(약 $0.01~0.015/장). 기본 `glm-image` · `1056x1568`(세로 스크롤 패널) |
 
-**선택 규칙**: 사용자 발언("antigravity로 그려" / "codex로 그려" / "GLM·zai로 그려") > `WEBTOON_RENDERER` 환경변수(`antigravity`|`codex`|`zai`|`auto`) > auto(agy 설치 → codex 로그인 → `ZAI_API_KEY` 순). **한 회차는 한 백엔드로 끝까지** 렌더합니다 — 중간에 바꾸면 작화 스타일이 흔들립니다. 검증 루프(0바이트/손상/md5 중복 → panel-validator 6축)는 백엔드와 무관하게 동일하게 적용됩니다.
+**선택 규칙**: 사용자 발언("antigravity로 그려" / "codex로 그려" / "GLM·zai로 그려") > `WEBTOON_RENDERER` 환경변수(`antigravity`|`codex`|`zai`|`auto`) > auto(기본값 — agy 설치 여부를 먼저 보고, 없으면 codex 로그인, 없으면 `ZAI_API_KEY`). **한 회차는 한 백엔드로 끝까지** 렌더합니다 — 중간에 바꾸면 작화 스타일이 흔들립니다. 검증 루프(0바이트/손상/md5 중복 → panel-validator 6축)는 백엔드와 무관하게 동일하게 적용됩니다.
 
 ### ❓ ZCode 구독(GLM 코딩 플랜)만으로 렌더가 되나요?
 

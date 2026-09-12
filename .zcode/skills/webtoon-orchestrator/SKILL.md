@@ -32,7 +32,7 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 - **작업 보드**: `TodoWrite`로 현재 Phase와 진행 중인 서브에이전트 작업을 추적한다(작업 완료마다 갱신).
 - **중계**: 서브에이전트끼리 직접 통신하지 않는다. 동료에게 전달할 내용은 보고에 담기고, 네가 다음 스폰 프롬프트에 넣어 중계한다. 백그라운드 서브에이전트에 후속 지시(REGEN 재렌더 등)가 필요하면 `SendMessage`를 쓴다.
 - **렌더 동시성**: 렌더 백엔드 동시 세션 ≤5는 번들 스크립트 `.zcode/skills/webtoon-panel-render/scripts/render_batch.sh`가 강제한다. **panel-artist-a/b/c를 동시에 띄우지 않는다** — 반드시 한 명씩 순차 디스패치하고, 완료 보고를 받고 다음을 띄운다. 소량(1~5장) REGEN은 서브에이전트 없이 네가 직접 스크립트를 실행해도 된다.
-- **렌더 백엔드**: antigravity(agy, Google 구독·별도 키 불필요 — 권장) / codex(ChatGPT OAuth) / zai(Z.ai GLM-Image, `ZAI_API_KEY`). 사용자 지정 > `WEBTOON_RENDERER` > auto(agy 설치 → codex 로그인 → ZAI_API_KEY 순)로 정한다. **한 회차는 한 백엔드로 끝까지** 렌더한다 — 중간 전환하면 작화 스타일이 흔들린다.
+- **렌더 백엔드**: antigravity(agy, Google 구독·별도 키 불필요 — **기본**) / codex(ChatGPT OAuth) / zai(Z.ai GLM-Image, `ZAI_API_KEY`). 사용자 지정 > `WEBTOON_RENDERER` > auto(agy 설치 → codex 로그인 → ZAI_API_KEY 순)로 정한다. **한 회차는 한 백엔드로 끝까지** 렌더한다 — 중간 전환하면 작화 스타일이 흔들린다.
 - **모델**: 별도 지정 없음 — 세션 모델(GLM)로 전 구간 실행한다.
 
 ## 에이전트 구성 (27명, 4팀)
