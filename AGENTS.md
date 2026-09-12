@@ -26,3 +26,4 @@
 - 2026-09-12: claude-code용 하네스를 ZCode(GLM)용으로 전환. `.claude/` → `.zcode/`, TeamCreate/TaskCreate 팀 운영 → Agent 도구 서브에이전트 디스패치, `model: opus` 제거, codex 배치 스크립트 번들화(기존 `~/.claude/skills/codex-image` 의존 제거).
 - 2026-09-12: 렌더 백엔드 선택 추가 — codex 외에 Z.ai GLM-Image API(`zai_imagegen_batch.sh`) 지원. 진입점은 `render_batch.sh` 디스패처(사용자 지정 > `WEBTOON_RENDERER` > auto). 한 회차는 한 백엔드로 끝까지 렌더.
 - 2026-09-12: **antigravity 백엔드 추가**(권장) — Antigravity CLI(agy) 헤드리스로 Google 구독 쿼터만으로 렌더(별도 키·과금 불필요). `antigravity_imagegen_batch.sh` 신설, auto 우선순위 agy → codex → zai. 실측: 2패널 한글 말풍선 렌더 성공(1장 대사 완벽, 1장 자모 1개 오차 → REGEN 루프 권장).
+- 2026-09-13: **설치·인증 원스톱 부트스트랩** `setup_backend.sh` 신설 — 백엔드별 설치·로그인·키 검증을 대화형으로 수행, `--status` 진단 모드. zai 키를 `~/.zai_api_key`(600) 파일로도 읽도록 zai 스크립트·디스패처 보강(셸 재시작 없이 인증 적용). 클린 클론 이식성 실측 완료(클론→복사→실렌더 성공).

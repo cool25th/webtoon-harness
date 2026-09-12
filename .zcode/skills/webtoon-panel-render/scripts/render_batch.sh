@@ -35,7 +35,9 @@ codex_available() {
 }
 
 zai_available() {
-  [ -n "${ZAI_API_KEY:-}" ]
+  [ -n "${ZAI_API_KEY:-}" ] && return 0
+  [ -s "$HOME/.zai_api_key" ] && return 0
+  return 1
 }
 
 case "$RENDERER" in

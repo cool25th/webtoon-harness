@@ -39,8 +39,13 @@ command -v curl >/dev/null 2>&1 || { echo "curl 필요" >&2; exit 2; }
 command -v python3 >/dev/null 2>&1 || { echo "python3 필요" >&2; exit 2; }
 command -v md5 >/dev/null 2>&1 && MD5_CMD="md5 -r" || MD5_CMD="md5sum"
 
+# 키 소스: 환경변수 우선, 없으면 ~/.zai_api_key 파일(setup_backend.sh이 저장)
+if [ -z "${ZAI_API_KEY:-}" ] && [ -s "$HOME/.zai_api_key" ]; then
+  ZAI_API_KEY="$(tr -d '[:space:]' < "$HOME/.zai_api_key")"
+fi
+
 if [ -z "${ZAI_API_KEY:-}" ]; then
-  echo "거부: ZAI_API_KEY 미설정 — Z.ai API 키를 발급받아 export ZAI_API_KEY=... 로 설정하거나, WEBTOON_RENDERER=codex 로 codex 백엔드를 쓸 것." >&2
+  echo "거부: ZAI_API_KEY 미설정 — Z.ai API 키를 발급받아 export ZAI_API_KEY=... 로 설정하거나, ~/.zai_api_key 파일로 저장하거나, WEBTOON_RENDERER=codex|antigravity 로 다른 백엔드를 쓸 것." >&2
   exit 2
 fi
 

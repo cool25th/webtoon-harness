@@ -128,10 +128,13 @@ panel_*.png(말풍선 포함) → index.html(오버레이 없음) → qa_report 
 
 ```bash
 # 1) 하네스를 프로젝트에 배치
-git clone https://github.com/revfactory/webtoon-harness.git
+git clone https://github.com/cool25th/webtoon-harness.git
 cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md /path/to/your-project/
 
-# 2) 해당 프로젝트를 워크스페이스로 ZCode 실행
+# 2) 렌더 백엔드 설치·인증 원스톱 (대화형 — antigravity/codex/zai 중 선택)
+bash /path/to/your-project/.zcode/skills/webtoon-panel-render/scripts/setup_backend.sh
+
+# 3) 해당 프로젝트를 워크스페이스로 ZCode 실행
 ```
 
 그다음 ZCode 세션에서 자연어로 요청합니다:
@@ -142,6 +145,15 @@ cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md /path/to/your-project/
 - `"패널 23번 다시 그려"` — 해당 패널만 재렌더 + 재검증
 
 `webtoon-orchestrator` 스킬이 자동으로 트리거되어, 메인 에이전트가 `Agent` 도구로 27개 역할의 서브에이전트를 단계별 스폰·조율합니다.
+
+### ⚡ 빠른 설정 — 설치·인증 원스톱
+
+위 2번 명령(`setup_backend.sh`)이 백엔드별 설치와 인증을 순서대로 안내합니다:
+
+- **antigravity(기본)**: 공식 설치 스크립트가 `agy`를 설치 → 인증 확인용 테스트 호출 1회 실행, 처음이면 Google 브라우저 로그인이 열리고 완료하면 자동 계속
+- **codex**: 없으면 npm 전역 설치(`npm install -g @openai/codex`) → `codex login` 브라우저 인증
+- **zai**: 키를 붙여넣으면 실호출로 검증 후 `~/.zai_api_key`(권한 600)에 저장 — 렌더 스크립트가 환경변수 없이도 이 파일을 바로 읽고, 셸 프로필 등록도 선택 지원
+- 현재 상태만 보려면: `bash .zcode/skills/webtoon-panel-render/scripts/setup_backend.sh --status`
 
 ### 요구 사항
 
