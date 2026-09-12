@@ -151,6 +151,27 @@ cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md /path/to/your-project/
 
 ---
 
+## 🍿 Claude Code에서 실행하기 (듀얼 부팅)
+
+이 하네스는 ZCode(GLM) 기준이지만, **심볼릭 링크 2개**만으로 Claude Code에서도 동일하게 동작합니다. Claude Code는 `.claude/skills/`(스킬 자동 발견)·`.claude/agents/`(역할 정의)·`CLAUDE.md`(지침 파일)를 읽기 때문에, `.zcode/`와 `AGENTS.md`를 가리키게 하면 됩니다.
+
+```bash
+cd /path/to/your-project
+git clone https://github.com/cool25th/webtoon-harness.git
+cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md .
+
+ln -s .zcode .claude          # Claude Code가 .claude/skills·.claude/agents를 읽도록
+ln -s AGENTS.md CLAUDE.md     # Claude Code가 지침을 읽도록
+```
+
+- **스킬**: SKILL.md 포맷(`name`/`description` frontmatter)이 두 환경에서 동일해서 그대로 발견됩니다.
+- **에이전트**: 오케스트레이터는 서브에이전트에게 `.zcode/agents/<역할>.md`를 **Read**시키는 방식이라 경로 그대로 동작합니다. `.claude/agents/` 링크가 있으면 Claude Code가 추가로 27개 역할을 커스텀 에이전트 타입으로도 등록합니다.
+- **도구 이름 차이**: 서브에이전트 스폰 도구는 ZCode에서 `Agent`, Claude Code에서 `Task`지만, 인자(`subagent_type: "general-purpose"`, `run_in_background: true`)와 동작이 같아 스킬 본문 수정은 필요 없습니다 — 오케스트레이터에 두 이름을 병기해 뒀습니다. `TodoWrite`·`SendMessage`는 양쪽에 모두 있습니다.
+- **모델**: Claude Code에서 실행하면 전 구간 Claude 모델로, ZCode에서 실행하면 GLM으로 돌아갑니다. 파이프라인·스킬·역할 정의는 동일합니다.
+- **제거된 것 확인**: 원본이 쓰던 Claude 전용 팀 기능(`TeamCreate`/`TeamDelete`/`TaskCreate`)과 `model: opus` 지정은 전환 시 걷어냈으므로, Claude Code에서도 별도 되돌리기 없이 실행됩니다.
+
+---
+
 ## 🎯 설계 원칙
 
 - **대사 위주·고긴장·매 회차 반전**: 내레이션을 최소화하고 캐릭터 대사·행동으로 긴장과 정보, 반전을 전달합니다.

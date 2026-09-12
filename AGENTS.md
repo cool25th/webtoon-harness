@@ -1,6 +1,6 @@
 # Webtoon Harness — ZCode(GLM) 워크스페이스 지침
 
-이 저장소는 **ZCode(GLM)용 웹툰 자동 제작 하네스**다. 이 지침 파일이 로드된 워크스페이스에서 웹툰 제작 요청이 오면 아래 규약을 따른다.
+이 저장소는 **ZCode(GLM)용 웹툰 자동 제작 하네스**다. 이 지침 파일이 로드된 워크스페이스에서 웹툰 제작 요청이 오면 아래 규약을 따른다. Claude Code에서는 `.claude → .zcode`, `CLAUDE.md → AGENTS.md` 심볼릭 링크로 동일하게 동작한다(README "Claude Code에서 실행하기" 참고).
 
 ## 진입점
 
