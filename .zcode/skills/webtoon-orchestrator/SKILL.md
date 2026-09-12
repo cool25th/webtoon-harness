@@ -32,7 +32,7 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 - **작업 보드**: `TodoWrite`로 현재 Phase와 진행 중인 서브에이전트 작업을 추적한다(작업 완료마다 갱신).
 - **중계**: 서브에이전트끼리 직접 통신하지 않는다. 동료에게 전달할 내용은 보고에 담기고, 네가 다음 스폰 프롬프트에 넣어 중계한다. 백그라운드 서브에이전트에 후속 지시(REGEN 재렌더 등)가 필요하면 `SendMessage`를 쓴다.
 - **렌더 동시성**: 렌더 백엔드 동시 세션 ≤5는 번들 스크립트 `.zcode/skills/webtoon-panel-render/scripts/render_batch.sh`가 강제한다. **panel-artist-a/b/c를 동시에 띄우지 않는다** — 반드시 한 명씩 순차 디스패치하고, 완료 보고를 받고 다음을 띄운다. 소량(1~5장) REGEN은 서브에이전트 없이 네가 직접 스크립트를 실행해도 된다.
-- **렌더 백엔드**: codex(ChatGPT OAuth) 또는 zai(Z.ai GLM-Image, `ZAI_API_KEY`). 사용자 지정 > `WEBTOON_RENDERER` > auto(codex 로그인 우선, 없으면 ZAI_API_KEY) 순으로 정한다. **한 회차는 한 백엔드로 끝까지** 렌더한다 — 중간 전환하면 작화 스타일이 흔들린다.
+- **렌더 백엔드**: antigravity(agy, Google 구독·별도 키 불필요 — 권장) / codex(ChatGPT OAuth) / zai(Z.ai GLM-Image, `ZAI_API_KEY`). 사용자 지정 > `WEBTOON_RENDERER` > auto(agy 설치 → codex 로그인 → ZAI_API_KEY 순)로 정한다. **한 회차는 한 백엔드로 끝까지** 렌더한다 — 중간 전환하면 작화 스타일이 흔들린다.
 - **모델**: 별도 지정 없음 — 세션 모델(GLM)로 전 구간 실행한다.
 
 ## 에이전트 구성 (27명, 4팀)
@@ -85,7 +85,7 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 1. 사용자 입력 분석 — 회차 번호 {NN}, 장르 방향(있으면), 제약(수위·길이·톤).
 2. `_workspace/00_input/brief.md`에 입력·회차 번호·제약을 기록.
 3. 작업 디렉토리 보장: `mkdir -p _workspace/{00_input,01_research,02_story,03_episode,04_visual,05_panels,06_assembly,RELEASE}`.
-4. **렌더 백엔드 사전 점검**(렌더가 포함되는 실행일 때): 백엔드를 정한다 — 사용자가 "codex로"/"GLM·zai로" 지정했으면 그 값, 아니면 `WEBTOON_RENDERER`, 없으면 auto(codex 로그인 우선, 없으면 `ZAI_API_KEY`). codex면 `codex --version`·`codex login status` 확인 후 미로그인 시 사용자에게 `codex login` 요청. zai면 `ZAI_API_KEY` 확인 후 없으면 [Z.ai API 키](https://z.ai/model-api) 발급·설정을 요청. zai는 이미지 1장당 과금임을 미리 안내.
+4. **렌더 백엔드 사전 점검**(렌더가 포함되는 실행일 때): 백엔드를 정한다 — 사용자 지정("antigravity로"/"codex로"/"GLM·zai로") > `WEBTOON_RENDERER` > auto(agy 설치 → codex 로그인 → `ZAI_API_KEY`). antigravity면 `agy` 설치 확인(없으면 `curl -fsSL https://antigravity.google/cli/install.sh | bash` 안내, 첫 실행 시 Google 로그인). codex면 `codex --version`·`codex login status`(출력이 stderr) 확인 후 미로그인 시 재인증 요청. zai면 `ZAI_API_KEY` 확인 후 없으면 발급 안내. zai는 이미지 1장당 과금임을 미리 안내.
 
 ### Phase 2: 트렌드 리서치 (리서치팀)
 

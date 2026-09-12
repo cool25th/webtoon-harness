@@ -7,12 +7,13 @@ description: "웹툰 패널 이미지를 선택한 렌더 백엔드(codex exec i
 
 웹툰 한 회차의 50+ 패널을 선택한 렌더 백엔드로 **동시 5장씩** 빠르게 렌더링하는 스킬. prompt-smith가 만든 패널 프롬프트 목록을 입력으로, 일관성을 지키며 PNG를 양산하고 검증한다.
 
-이 스킬은 자체 번들 배치 스크립트로 렌더를 수행한다 — 외부 스킬·외부 경로 의존이 없다. 렌더 백엔드는 둘 중 하나:
+이 스킬은 자체 번들 배치 스크립트로 렌더를 수행한다 — 외부 스킬·외부 경로 의존이 없다. 렌더 백엔드는 셋 중 하나:
 
+- **antigravity**(권장, 별도 키 불필요) — Google Antigravity CLI(agy)의 헤드리스 에이전트. Google 계정 구독 쿼터 소비, 키체인 자동 로그인. `scripts/antigravity_imagegen_batch.sh`. 설치: `curl -fsSL https://antigravity.google/cli/install.sh | bash`
 - **codex**(ChatGPT OAuth 필요) — `scripts/codex_imagegen_batch.sh`
 - **zai**(Z.ai GLM-Image API, `ZAI_API_KEY` 필요) — `scripts/zai_imagegen_batch.sh`. 기본 모델 `glm-image`, 기본 크기 `1056x1568`(세로 스크롤 패널). `ZAI_IMAGE_QUALITY=standard`로 고속 모드.
-- **선택**: 두 스크립트를 직접 쓰지 말고 디스패처 `scripts/render_batch.sh`를 호출한다. `WEBTOON_RENDERER` 환경변수(`codex`|`zai`|`auto`, 기본 `auto`)로 백엔드를 고른다 — auto는 codex 로그인을 먼저 확인하고, 없으면 `ZAI_API_KEY`로 zai를 쓴다. 사용자가 "codex로 그려"/"GLM·zai로 그려"라고 백엔드를 지정하면 그 값을 쓴다.
-- 두 백엔드 스크립트는 인터페이스가 동일하다: 임의 개수 항목을 동시 5장 웨이브 실행, 항목당 타임아웃 감시, 완료 후 0바이트/손상/**md5 중복** 자동 검사·요약 보고.
+- **선택**: 세 스크립트를 직접 쓰지 말고 디스패처 `scripts/render_batch.sh`를 호출한다. `WEBTOON_RENDERER` 환경변수(`antigravity`|`codex`|`zai`|`auto`, 기본 `auto`)로 백엔드를 고른다 — auto는 agy 설치 → antigravity, codex 로그인 → codex, `ZAI_API_KEY` → zai 순으로 고른다. 사용자가 백엔드를 지정하면 그 값을 쓴다.
+- 세 백엔드 스크립트는 인터페이스가 동일하다: 임의 개수 항목을 동시 5장 웨이브 실행, 항목당 타임아웃 감시, 완료 후 0바이트/손상/**md5 중복** 자동 검사·요약 보고.
 
 핵심 4원칙(EP01 제작 피드백 반영):
 1. **레퍼런스 먼저(일관성).** 패널을 그리기 전에 캐릭터 다각도/표정 레퍼런스 시트를 먼저 렌더해 외형 기준(SSOT)을 확정한다. 텍스트 토큰만으로는 매번 다른 얼굴이 나온다.
@@ -22,7 +23,9 @@ description: "웹툰 패널 이미지를 선택한 렌더 백엔드(codex exec i
 
 ## 사전 점검 (회차당 1회)
 
-먼저 렌더 백엔드를 정한다. 사용자 지정("codex로 그려" / "GLM·zai로 그려") > `WEBTOON_RENDERER` > auto 순으로 따른다.
+먼저 렌더 백엔드를 정한다. 사용자 지정("antigravity로 그려" / "codex로 그려" / "GLM·zai로 그려") > `WEBTOON_RENDERER` > auto 순으로 따른다.
+
+**antigravity 백엔드일 때:** `agy` 설치 여부만 확인한다(`command -v agy` 또는 `~/.local/bin/agy`). 없으면 `curl -fsSL https://antigravity.google/cli/install.sh | bash` 설치를 안내한다. 첫 실행 시 브라우저 Google 로그인이 필요할 수 있다(이후 Keychain 자동). 항목당 에이전트 실행이라 codex보다 느리고(수십 초~수 분) Google 구독 쿼터를 소비한다. `AGY_ASPECT` env로 화면비 지시를 바꿀 수 있다(기본 세로 2:3).
 
 **codex 백엔드일 때:**
 
