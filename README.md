@@ -1,6 +1,6 @@
 # 🎬 Webtoon Harness — 웹툰 자동 제작 하네스
 
-> 트렌드 조사부터 세로 스크롤 뷰어 완성까지, 웹툰 한 회차를 **AI 에이전트 팀**이 단계별로 만들어내는 Claude Code 하네스.
+> 트렌드 조사부터 세로 스크롤 뷰어 완성까지, 웹툰 한 회차를 **AI 에이전트 팀**이 단계별로 만들어내는 ZCode(GLM) 하네스.
 
 **27개 전문 에이전트**와 **6개 스킬**로 구성되며, 인기 웹툰 트렌드 조사 → 대사 위주·고긴장·매 회차 반전 시나리오 작성 → 캐릭터 레퍼런스 시트 선행 렌더 → 회차당 50+ 패널을 말풍선·한글 대사 **in-image 베이크**로 병렬 렌더 → 생성-검증 루프로 재생성 → 세로 스크롤 뷰어 조립까지 전 과정을 자동화합니다.
 
@@ -21,8 +21,8 @@
 ## 📁 구조
 
 ```
-.claude/
-├── agents/                      # 27개 전문 에이전트 정의
+.zcode/
+├── agents/                      # 27개 전문 에이전트 정의 (서브에이전트가 Read하는 역할 문서)
 │   ├── trend-scout.md           # 리서치팀
 │   ├── concept-architect.md     # 시나리오팀
 │   ├── art-director.md          # 비주얼팀
@@ -34,8 +34,9 @@
     ├── webtoon-trend-research/  # 트렌드 리서치 방법론
     ├── webtoon-scenario/        # 시나리오·대본 집필
     ├── webtoon-panel-breakdown/ # 패널 분해·스타일/일관성 토큰
-    ├── webtoon-panel-render/    # codex-image 병렬 렌더
+    ├── webtoon-panel-render/    # codex 병렬 렌더 (+ 번들 배치 스크립트 scripts/codex_imagegen_batch.sh)
     └── webtoon-assembly/        # 세로 스크롤 조립·검수·패키징
+AGENTS.md                        # ZCode 워크스페이스 지침 (하네스 불변 규약)
 ```
 
 ---
@@ -97,30 +98,29 @@ panel_*.png(말풍선 포함) → index.html(오버레이 없음) → qa_report 
 
 ## 🚀 사용 방법
 
-이 저장소는 [Claude Code](https://claude.ai/code) 하네스입니다. `.claude/` 디렉토리를 작업 프로젝트 루트에 두고 Claude Code를 실행하세요.
+이 저장소는 [ZCode](https://z.ai) 하네스입니다. `.zcode/` 디렉토리와 `AGENTS.md`를 작업 프로젝트 루트에 두고 ZCode를 실행하세요.
 
 ```bash
 # 1) 하네스를 프로젝트에 배치
 git clone https://github.com/revfactory/webtoon-harness.git
-cp -r webtoon-harness/.claude /path/to/your-project/
+cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md /path/to/your-project/
 
-# 2) 해당 프로젝트에서 Claude Code 실행 후
+# 2) 해당 프로젝트를 워크스페이스로 ZCode 실행
 ```
 
-그다음 Claude Code 세션에서 자연어로 요청합니다:
+그다음 ZCode 세션에서 자연어로 요청합니다:
 
 - `"트렌드 반영해서 웹툰 1화 만들어줘"` — 전체 파이프라인 실행
 - `"다음 화 만들어"` — 세계관/스타일/연속성 재사용, 새 회차 생성
 - `"이 회차 반전 더 강하게"` — 시나리오팀 부분 재실행
 - `"패널 23번 다시 그려"` — 해당 패널만 재렌더 + 재검증
 
-`webtoon-orchestrator` 스킬이 자동으로 트리거되어 단계별 에이전트 팀을 조율합니다.
+`webtoon-orchestrator` 스킬이 자동으로 트리거되어, 메인 에이전트가 `Agent` 도구로 27개 역할의 서브에이전트를 단계별 스폰·조율합니다.
 
 ### 요구 사항
 
-- **Claude Code** (에이전트·스킬 실행 환경)
-- **codex CLI** (`codex exec`의 `image_generation` 툴) — 패널 이미지 병렬 렌더. ChatGPT OAuth 인증 필요. codex 전역 동시 세션은 **최대 5개**를 지킵니다.
-  - codex CLI 사용 방법은 [`codex-cli` 스킬](https://github.com/revfactory/skills/tree/main/codex-cli)을 참고하세요.
+- **ZCode** (GLM 기반 에이전트 실행 환경 — 서브에이전트 스폰·스킬 실행)
+- **codex CLI** (`codex exec`의 `image_generation` 툴) — 패널 이미지 병렬 렌더. ChatGPT OAuth 인증 필요. codex 전역 동시 세션은 **최대 5개**를 지키며, 하네스 번들 배치 스크립트(`.zcode/skills/webtoon-panel-render/scripts/codex_imagegen_batch.sh`)가 이 한도를 강제합니다.
 
 > 💡 이 저장소의 인포그래픽들은 `codex-image`로 16:9 비율 5장을 동시 병렬 렌더해 제작했습니다.
 
