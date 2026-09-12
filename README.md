@@ -162,6 +162,16 @@ cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md /path/to/your-project/
 
 **선택 규칙**: 사용자 발언("codex로 그려" / "GLM·zai로 그려") > `WEBTOON_RENDERER` 환경변수(`codex`|`zai`|`auto`) > auto(codex 로그인을 먼저 확인하고, 없으면 `ZAI_API_KEY`). **한 회차는 한 백엔드로 끝까지** 렌더합니다 — 중간에 바꾸면 작화 스타일이 흔들립니다. 검증 루프(0바이트/손상/md5 중복 → panel-validator 6축)는 백엔드와 무관하게 동일하게 적용됩니다.
 
+### ❓ ZCode 구독(GLM 코딩 플랜)만으로 렌더가 되나요?
+
+**이미지 렌더는 안 됩니다.** 실측으로 확인한 사실입니다:
+
+- ZCode 구독(GLM 코딩 플랜)은 **코딩·텍스트 모델만** 포함합니다. 하네스의 오케스트레이션·시나리오·검증 등 전 단계는 이 구독으로 실행되고, 유료 API 키나 codex 없이 돌아갑니다.
+- 이미지 생성 모델(GLM-Image · CogView-4)은 플랜에 포함되지 않고, [Z.ai API 플랫폼](https://docs.z.ai/guides/overview/pricing)의 이미지당 별도 과금($0.01~0.015/장)입니다.
+- ZCode CLI가 저장한 구독 인증 토큰은 CLI 내부 전용(암호화 저장)이며, `api.z.ai` 이미지 엔드포인트에 직접 쓰면 `401 token expired or incorrect`가 반환됩니다(대조군인 코딩 엔드포인트에서도 동일 — API 직접 호출 경로가 아님).
+
+따라서 렌더만 위 표의 두 백엔드 중 하나를 준비하면 되고, 파이프라인의 나머지 전부는 ZCode 구독 안에서 처리됩니다.
+
 > 💡 이 저장소의 인포그래픽들은 `codex-image`로 16:9 비율 5장을 동시 병렬 렌더해 제작했습니다.
 
 ---

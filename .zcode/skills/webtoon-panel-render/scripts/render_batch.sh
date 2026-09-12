@@ -46,9 +46,10 @@ case "$RENDERER" in
       echo "[render_batch] 백엔드: zai / GLM-Image (auto — ZAI_API_KEY 감지, codex 미로그인)"
       exec "$SCRIPT_DIR/zai_imagegen_batch.sh" "$@"
     else
-      echo "렌더 백엔드를 정할 수 없다. 둘 중 하나를 준비할 것:" >&2
-      echo "  1) codex login  (codex CLI 백엔드)" >&2
-      echo "  2) export ZAI_API_KEY=...  (Z.ai GLM-Image 백엔드 — https://z.ai/model-api)" >&2
+      echo "렌더 백엔드를 정할 수 없다. ZCode 구독(GLM 코딩 플랜)은 이미지 생성을 포함하지 않아서," >&2
+      echo "텍스트·조율 단계와 달리 렌더에는 둘 중 하나의 별도 인증이 필요하다:" >&2
+      echo "  1) codex login                       (codex CLI 백엔드)" >&2
+      echo "  2) export ZAI_API_KEY=...            (Z.ai GLM-Image 백엔드 — https://z.ai/model-api, 이미지당 과금)" >&2
       echo "또는 WEBTOON_RENDERER=codex|zai 로 명시 선택." >&2
       exit 2
     fi
