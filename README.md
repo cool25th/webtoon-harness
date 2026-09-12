@@ -170,6 +170,8 @@ ln -s AGENTS.md CLAUDE.md     # Claude Code가 지침을 읽도록
 - **모델**: Claude Code에서 실행하면 전 구간 Claude 모델로, ZCode에서 실행하면 GLM으로 돌아갑니다. 파이프라인·스킬·역할 정의는 동일합니다.
 - **제거된 것 확인**: 원본이 쓰던 Claude 전용 팀 기능(`TeamCreate`/`TeamDelete`/`TaskCreate`)과 `model: opus` 지정은 전환 시 걷어냈으므로, Claude Code에서도 별도 되돌리기 없이 실행됩니다.
 
+> ✅ **실측 검증**: 위 레이아웃을 Claude Code 2.1.220 헤드리스(`claude -p`)로 실제 확인했습니다 — `webtoon-orchestrator` 스킬 자동 발견, `Task` 도구로 `general-purpose` 서브에이전트 스폰, 서브에이전트의 `.zcode/agents/<역할>.md` Read 및 보고, 그리고 `.claude/agents/` 링크를 통한 27개 역할의 커스텀 에이전트 타입 등록까지 모두 동작합니다.
+
 ---
 
 ## 🎯 설계 원칙
