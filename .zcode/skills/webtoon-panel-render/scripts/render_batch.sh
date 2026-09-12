@@ -21,7 +21,8 @@ RENDERER="${WEBTOON_RENDERER:-auto}"
 
 codex_available() {
   command -v codex >/dev/null 2>&1 || return 1
-  codex login status 2>/dev/null | grep -qi "logged in" || return 1
+  # codex login status는 결과를 stderr로 출력하므로 2>&1 필수
+  codex login status 2>&1 | grep -qi "logged in" || return 1
   return 0
 }
 

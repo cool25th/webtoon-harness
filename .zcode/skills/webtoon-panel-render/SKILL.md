@@ -34,6 +34,8 @@ codex features list | grep image_generation    # stable/true 확인
 
 미로그인이면 사용자에게 `codex login` 실행을 요청한다.
 
+**주의 — `codex login status`의 한계**: 이 명령은 로컬 토큰 존재만 확인한다. 서버 측에서 토큰이 폐기됐으면(`token_revoked`) "Logged in"으로 나와도 첫 렌더에서 401로 실패한다(실측). 로그에 `401 Unauthorized ... auth error code: token_revoked`가 보이면 사용자에게 `codex login` 재인증을 요청한다.
+
 **zai 백엔드일 때:** `ZAI_API_KEY` 설정 여부만 확인한다(`[ -n "$ZAI_API_KEY" ]`). 없으면 사용자에게 [Z.ai API 키](https://z.ai/model-api) 발급·`export ZAI_API_KEY=...` 설정을 요청한다. 기본값: 모델 `glm-image`, 크기 `1056x1568`. 요청당 과금이므로 50패널 = 50요청이다.
 
 렌더 도중 멈추지 않도록 시작 전에 확인한다.
