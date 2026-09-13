@@ -43,3 +43,5 @@ webtoon-series/            ← 워크스페이스 (여기서 ZCode 실행)
 - 2026-09-12: **antigravity 백엔드 추가**(권장) — Antigravity CLI(agy) 헤드리스로 Google 구독 쿼터만으로 렌더(별도 키·과금 불필요). `antigravity_imagegen_batch.sh` 신설, auto 우선순위 agy → codex → zai. 실측: 2패널 한글 말풍선 렌더 성공(1장 대사 완벽, 1장 자모 1개 오차 → REGEN 루프 권장).
 - 2026-09-13: **webtoon-series 멀티 스토리 구조** — 이야기를 `webtoon-series/{스토리}/` 폴더 단위로 저장(오케스트레이터가 신규 이야기 시 자동 생성, 하네스는 시리즈 전체 공유). 스폰 프롬프트·스크립트 인자는 SDIR prefix 전체 경로 필수.
 - 2026-09-13: **설치·인증 원스톱 부트스트랩** `setup_backend.sh` 신설 — 백엔드별 설치·로그인·키 검증을 대화형으로 수행, `--status` 진단 모드. zai 키를 `~/.zai_api_key`(600) 파일로도 읽도록 zai 스크립트·디스패처 보강(셸 재시작 없이 인증 적용). 클린 클론 이식성 실측 완료(클론→복사→실렌더 성공).
+- 2026-09-13: **렌더 백엔드 공통부 추출** — 3종 배치 스크립트의 복제 로직을 `webtoon-panel-render/scripts/lib/common.sh`로 분리(백엔드 3종 728줄 → 268줄 + 공통 214줄, scripts/ 총 974→728줄). 타임아웃 env를 `RENDER_TIMEOUT_SECS`로 통일(구 `*_TIMEOUT_SECS`도 인식), 이미지 포맷 검사는 PNG|JPEG로 단일화, 동시성 가드 문구 통일. 신구 동작 패리티 72케이스 + agy 실렌더 검증.
+- 2026-09-13: **agy 저장 누락 수정** — Antigravity print(텍스트) 모드에서 이미지 생성 후 파일 저장이 누락되는 실측 문제(텍스트 모드 5회 연속 "파일 미생성")를 `--output-format json`으로 회피(json 모드 2/2 성공). 리팩터 검증 중 실렌더 스모크로 발견.

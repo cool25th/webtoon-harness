@@ -13,7 +13,7 @@ description: "웹툰 패널 이미지를 선택한 렌더 백엔드(codex exec i
 - **codex**(ChatGPT OAuth 필요) — `scripts/codex_imagegen_batch.sh`
 - **zai**(Z.ai GLM-Image API, `ZAI_API_KEY` 필요) — `scripts/zai_imagegen_batch.sh`. 기본 모델 `glm-image`, 기본 크기 `1056x1568`(세로 스크롤 패널). `ZAI_IMAGE_QUALITY=standard`로 고속 모드.
 - **선택**: 세 스크립트를 직접 쓰지 말고 디스패처 `scripts/render_batch.sh`를 호출한다. `WEBTOON_RENDERER` 환경변수(`antigravity`|`codex`|`zai`|`auto`, 기본 `auto`)로 백엔드를 고른다 — auto는 agy 설치 → antigravity, codex 로그인 → codex, `ZAI_API_KEY` → zai 순으로 고른다. 사용자가 백엔드를 지정하면 그 값을 쓴다.
-- 세 백엔드 스크립트는 인터페이스가 동일하다: 임의 개수 항목을 동시 5장 웨이브 실행, 항목당 타임아웃 감시, 완료 후 0바이트/손상/**md5 중복** 자동 검사·요약 보고.
+- 세 백엔드 스크립트는 인터페이스가 동일하다: 임의 개수 항목을 동시 5장 웨이브 실행, 항목당 타임아웃 감시(공통 env `RENDER_TIMEOUT_SECS`), 완료 후 0바이트/손상(PNG·JPEG 허용)/**md5 중복** 자동 검사·요약 보고. 웨이브·타임아웃·무결성·요약 공통 로직은 `scripts/lib/common.sh`에 있고, 각 백엔드 스크립트는 자기 렌더 함수만 정의한다.
 
 핵심 4원칙(EP01 제작 피드백 반영):
 1. **레퍼런스 먼저(일관성).** 패널을 그리기 전에 캐릭터 다각도/표정 레퍼런스 시트를 먼저 렌더해 외형 기준(SSOT)을 확정한다. 텍스트 토큰만으로는 매번 다른 얼굴이 나온다.
