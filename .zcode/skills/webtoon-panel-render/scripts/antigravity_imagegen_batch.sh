@@ -23,6 +23,8 @@
 #                      (구 AGY_TIMEOUT_SECS도 인식)
 #
 # 출력: 사람이 읽는 요약(성공/실패/중복 패널 명시). 종료 코드 0=전 항목 유효, 1=문제 있음.
+#   (개별 렌더 로그 .render_logs/*_render.log에는 agy의 JSON 출력이 그대로 담긴다 —
+#    파일 저장 누락 버그 우회용 --output-format json 모드 때문. 시작/종료 래퍼 라인으로 탐색.)
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

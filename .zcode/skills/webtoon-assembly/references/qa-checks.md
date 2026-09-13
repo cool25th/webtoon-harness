@@ -17,14 +17,16 @@ find "$DIR" -name 'panel_*.png' -size 0 -print
 ```
 출력이 있으면 해당 패널 재렌더 요청(panel-artist).
 
-## 3. 손상 PNG 검사 (매직 바이트 + 디코딩)
+## 3. 손상 이미지 검사 (매직 바이트 + 디코딩)
 ```bash
 EP=01; DIR="_workspace/05_panels/ep${EP}"
 for f in "$DIR"/panel_*.png; do
-  # PNG 시그니처 확인
-  sig=$(head -c 8 "$f" | xxd -p)
+  # 시그니처 확인 — 렌더 단계와 동일하게 PNG|JPEG를 인정한다
+  # (zai·glm 등 백엔드가 JPEG 바이트를 .png 이름으로 저장할 수 있다)
+  sig=$(head -c 3 "$f" | xxd -p)
   case "$sig" in
-    89504e470d0a1a0a) ok=1 ;;
+    89504e) ok=1 ;;   # PNG
+    ffd8ff) ok=1 ;;   # JPEG
     *) echo "BAD-HEADER: $f" ;;
   esac
 done

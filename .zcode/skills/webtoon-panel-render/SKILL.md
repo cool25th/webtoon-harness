@@ -25,7 +25,7 @@ description: "웹툰 패널 이미지를 선택한 렌더 백엔드(codex exec i
 
 먼저 렌더 백엔드를 정한다. 사용자 지정("antigravity로 그려" / "codex로 그려" / "GLM·zai로 그려") > `WEBTOON_RENDERER` > auto 순으로 따른다.
 
-**antigravity 백엔드일 때:** `agy` 설치 여부만 확인한다(`command -v agy` 또는 `~/.local/bin/agy`). 없으면 `curl -fsSL https://antigravity.google/cli/install.sh | bash` 설치를 안내한다. 첫 실행 시 브라우저 Google 로그인이 필요할 수 있다(이후 Keychain 자동). 항목당 에이전트 실행이라 codex보다 느리고(수십 초~수 분) Google 구독 쿼터를 소비한다. `AGY_ASPECT` env로 화면비 지시를 바꿀 수 있다(기본 세로 2:3).
+**antigravity 백엔드일 때:** `agy` 설치 여부만 확인한다(`command -v agy` 또는 `~/.local/bin/agy`). 없으면 `curl -fsSL https://antigravity.google/cli/install.sh | bash` 설치를 안내한다. 첫 실행 시 브라우저 Google 로그인이 필요할 수 있다(이후 Keychain 자동). 항목당 에이전트 실행이라 codex보다 느리고(수십 초~수 분) Google 구독 쿼터를 소비한다. 개별 렌더 로그(`.render_logs/*_render.log`)는 agy의 JSON 출력이 담기지만 시작/종료 래퍼 라인으로 탐색 가능하다. `AGY_ASPECT` env로 화면비 지시를 바꿀 수 있다(기본 세로 2:3).
 
 **스타일 앵커 — 화풍 고정 (antigravity 강력 권장, 실측 효과 있음):** 텍스트 스타일 토큰만으로는 복잡한 장면에서 화풍이 이탈한다(실측: 텍스트 전용은 사실적 렌더링으로 드리프트 + 지시 없는 한국어 대사 자체 생성). 해법은 앵커 레퍼런스 이미지 — 확정된 스타일 샘플 패널(`refs/style_anchor.png`)을 `STYLE_ANCHOR` env에 **절대경로**로 넘기면, 배치 스크립트가 매 패널 생성 전에 에이전트가 앵커를 보고 동일 화풍으로 그리도록 지시를 자동 주입한다.
 
