@@ -2,6 +2,21 @@
 
 이 저장소는 **ZCode(GLM)용 웹툰 자동 제작 하네스**다. 이 지침 파일이 로드된 워크스페이스에서 웹툰 제작 요청이 오면 아래 규약을 따른다. Claude Code에서는 `.claude → .zcode`, `CLAUDE.md → AGENTS.md` 심볼릭 링크로 동일하게 동작한다(README "Claude Code에서 실행하기" 참고).
 
+## 스토리 디렉토리 구조
+
+이야기는 `webtoon-series/{스토리}/` 폴더 단위로 저장한다. 하네스(.zcode)는 webtoon-series 루트에서 시리즈 전체를 공유한다.
+
+```
+webtoon-series/            ← 워크스페이스 (여기서 ZCode 실행)
+├── .zcode/  AGENTS.md     ← 하네스 (시리즈 전체 공유)
+├── {스토리A}/              ← 이야기별 폴더 (오케스트레이터가 자동 생성)
+│   └── _workspace/ … RELEASE/ep{NN}/
+└── {스토리B}/
+```
+
+- 새 이야기 요청 시 오케스트레이터가 `{스토리}/_workspace/` 구조를 자동 생성한다.
+- 모든 산출물 경로는 `webtoon-series/{스토리}/...` 전체 상대경로로 전달한다(스토리 혼입 방지).
+
 ## 진입점
 
 - 웹툰 제작·수정 요청 → `webtoon-orchestrator` 스킬(`.zcode/skills/webtoon-orchestrator/SKILL.md`)을 로드하고 그 워크플로우를 수행한다.
@@ -26,4 +41,5 @@
 - 2026-09-12: claude-code용 하네스를 ZCode(GLM)용으로 전환. `.claude/` → `.zcode/`, TeamCreate/TaskCreate 팀 운영 → Agent 도구 서브에이전트 디스패치, `model: opus` 제거, codex 배치 스크립트 번들화(기존 `~/.claude/skills/codex-image` 의존 제거).
 - 2026-09-12: 렌더 백엔드 선택 추가 — codex 외에 Z.ai GLM-Image API(`zai_imagegen_batch.sh`) 지원. 진입점은 `render_batch.sh` 디스패처(사용자 지정 > `WEBTOON_RENDERER` > auto). 한 회차는 한 백엔드로 끝까지 렌더.
 - 2026-09-12: **antigravity 백엔드 추가**(권장) — Antigravity CLI(agy) 헤드리스로 Google 구독 쿼터만으로 렌더(별도 키·과금 불필요). `antigravity_imagegen_batch.sh` 신설, auto 우선순위 agy → codex → zai. 실측: 2패널 한글 말풍선 렌더 성공(1장 대사 완벽, 1장 자모 1개 오차 → REGEN 루프 권장).
+- 2026-09-13: **webtoon-series 멀티 스토리 구조** — 이야기를 `webtoon-series/{스토리}/` 폴더 단위로 저장(오케스트레이터가 신규 이야기 시 자동 생성, 하네스는 시리즈 전체 공유). 스폰 프롬프트·스크립트 인자는 SDIR prefix 전체 경로 필수.
 - 2026-09-13: **설치·인증 원스톱 부트스트랩** `setup_backend.sh` 신설 — 백엔드별 설치·로그인·키 검증을 대화형으로 수행, `--status` 진단 모드. zai 키를 `~/.zai_api_key`(600) 파일로도 읽도록 zai 스크립트·디스패처 보강(셸 재시작 없이 인증 적용). 클린 클론 이식성 실측 완료(클론→복사→실렌더 성공).

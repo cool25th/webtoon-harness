@@ -18,8 +18,9 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 1. 역할 정의: .zcode/agents/<역할명>.md
 2. 방법론 스킬: .zcode/skills/<스킬명>/SKILL.md
 
+스토리 디렉토리(SDIR): webtoon-series/{스토리}/ — 아래 모든 경로는 이 기준
 회차: ep{NN}
-입력(먼저 Read): <상류 산출물 파일 경로들>
+입력(먼저 Read): <상류 산출물 파일 경로들 — SDIR prefix 포함 전체 경로>
 임무: <이번에 맡길 구체 작업>
 산출: <출력 파일 경로>
 완료 후 최종 메시지에 결과 요약(성공/실패, 파일 경로, 후속 권고)을 반드시 보고한다.
@@ -34,6 +35,15 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 - **렌더 동시성**: 렌더 백엔드 동시 세션 ≤5는 번들 스크립트 `.zcode/skills/webtoon-panel-render/scripts/render_batch.sh`가 강제한다. **panel-artist-a/b/c를 동시에 띄우지 않는다** — 반드시 한 명씩 순차 디스패치하고, 완료 보고를 받고 다음을 띄운다. 소량(1~5장) REGEN은 서브에이전트 없이 네가 직접 스크립트를 실행해도 된다.
 - **렌더 백엔드**: antigravity(agy, Google 구독·별도 키 불필요 — **기본**) / codex(ChatGPT OAuth) / zai(Z.ai GLM-Image, `ZAI_API_KEY`). 사용자 지정 > `WEBTOON_RENDERER` > auto(agy 설치 → codex 로그인 → ZAI_API_KEY 순)로 정한다. **한 회차는 한 백엔드로 끝까지** 렌더한다 — 중간 전환하면 작화 스타일이 흔들린다.
 - **모델**: 별도 지정 없음 — 세션 모델(GLM)로 전 구간 실행한다.
+
+## 스토리 디렉토리 규약 (webtoon-series)
+
+모든 이야기는 `webtoon-series/{스토리}/` 폴더 단위로 저장하고, 하나의 하네스(.zcode)가 시리즈 전체를 공유한다. 사용자는 `webtoon-series/`를 워크스페이스로 ZCode를 실행한다.
+
+- **SDIR** = `webtoon-series/{스토리}/` — 이야기 하나의 모든 산출물이 담기는 루트. 아래 워크플로우의 `_workspace/...` 경로는 모두 `{SDIR}/_workspace/...`를 뜻하는 축약이다.
+- **스포런 프롬프트·스크립트 인자에는 반드시 SDIR부터 붙은 전체 상대경로를 쓴다** (예: `webtoon-series/내-이야기/_workspace/05_panels/ep01/panel_001.png`). CWD가 webtoon-series이므로 축약 경로를 쓰면 스토리가 섞인다.
+- 스토리 폴더명: 제목에서 파일시스템 금지문자(`/:*?"<>|`) 제거, 공백은 `_`로 치환(한글 유지). 충돌 시 접미사 `_2`.
+- 제목이 없으면 핵심 프리미스에서 한 줄 제목을 지어 사용자에게 제안하고, 응답이 없으면 `story_{YYYYMMDD_HHMM}`으로 진행한다.
 
 ## 에이전트 구성 (27명, 4팀)
 
@@ -69,23 +79,25 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 
 ## 워크플로우
 
-### Phase 0: 컨텍스트 확인 (후속 작업 판별)
+### Phase 0: 컨텍스트 확인 (스토리 판별)
 
-`_workspace/` 존재 여부와 사용자 요청으로 실행 모드를 정한다.
+`webtoon-series/`가 없으면 먼저 만든다. `ls webtoon-series/`로 기존 스토리 폴더 목록을 확인하고 사용자 요청과 대조해 실행 모드를 정한다.
 
-1. `_workspace/` 미존재 → **초기 실행**. Phase 1로.
-2. `_workspace/` 존재 + "다음 화" 요청 → **새 회차 실행**. {NN}을 증가시키고, 02_story·style-bible·character-sheets·**refs/(레퍼런스 시트)**·continuity.md는 재사용(Read, 재렌더 금지 — 시리즈 일관성), 03_episode 이후만 새로 생성.
-3. `_workspace/` 존재 + "이 회차의 OO만 다시" 요청 → **부분 재실행**. 해당 단계 역할만 재스폰하고, 그 산출물만 덮어쓴다. 하위 단계(예: 대본 수정 시 샷리스트→렌더→조립)는 영향받는 만큼만 재실행.
-4. `_workspace/` 존재 + 새 기획 입력 → **새 기획 실행**. 기존 `_workspace/`를 `_workspace_{YYYYMMDD_HHMMSS}/`로 이동 후 Phase 1.
+1. 신규 이야기 요청 → **새 스토리 폴더 생성**. Phase 1로.
+2. 기존 이야기 후속("다음 화", "이 회차 수정", "패널 N번 다시") → **해당 스토리 폴더에서 재개**. {NN} 증가·부분 재실행 규칙은 아래와 동일.
+   - 요청만으로 스토리를 특정할 수 없으면 스토리 폴더 목록(그리고 각 brief의 로그라인)을 보여주고 사용자에게 선택을 요청한다.
+3. 기존 이야기에서 "이 회차의 OO만 다시" → **부분 재실행**: 해당 단계 역할만 재스폰하고 그 산출물만 덮어쓴다. 하위 단계(예: 대본 수정 시 샷리스트→렌더→조립)는 영향받는 만큼만.
+4. 기존 이야기에 완전히 새 기획 입력 → **리부트**: 기존 `{SDIR}/_workspace/`를 `{SDIR}/_workspace_{YYYYMMDD_HHMMSS}/`로 이동 후 Phase 1.
 
-부분/새회차 재실행 시 이전 산출물 경로를 스폰 프롬프트에 포함해 "Read 후 개선점만 반영"을 지시한다.
+후속 실행 시 이전 산출물 경로(SDIR prefix 포함)를 스폰 프롬프트에 넣어 "Read 후 개선점만 반영"을 지시한다.
 
 ### Phase 1: 준비
 
-1. 사용자 입력 분석 — 회차 번호 {NN}, 장르 방향(있으면), 제약(수위·길이·톤).
-2. `_workspace/00_input/brief.md`에 입력·회차 번호·제약을 기록.
-3. 작업 디렉토리 보장: `mkdir -p _workspace/{00_input,01_research,02_story,03_episode,04_visual,05_panels,06_assembly,RELEASE}`.
-4. **렌더 백엔드 사전 점검**(렌더가 포함되는 실행일 때): 백엔드를 정한다 — 사용자 지정("antigravity로"/"codex로"/"GLM·zai로") > `WEBTOON_RENDERER` > auto(agy 설치 → codex 로그인 → `ZAI_API_KEY`). antigravity면 `agy` 설치 확인(없으면 `curl -fsSL https://antigravity.google/cli/install.sh | bash` 안내, 첫 실행 시 Google 로그인). codex면 `codex --version`·`codex login status`(출력이 stderr) 확인 후 미로그인 시 재인증 요청. zai면 `ZAI_API_KEY` 확인 후 없으면 발급 안내. zai는 이미지 1장당 과금임을 미리 안내.
+1. 사용자 입력 분석 — **스토리 제목**, 회차 번호 {NN}, 장르 방향(있으면), 제약(수위·길이·톤).
+2. **SDIR 확정**: 위 스토리 디렉토리 규약대로 `webtoon-series/{스토리}/`를 만들고 이하 모든 경로의 접두로 사용.
+3. 작업 디렉토리 보장: `mkdir -p {SDIR}/_workspace/{00_input,01_research,02_story,03_episode,04_visual,05_panels,06_assembly,RELEASE}`.
+4. `{SDIR}/_workspace/00_input/brief.md`에 제목·입력·회차 번호·제약을 기록.
+5. **렌더 백엔드 사전 점검**(렌더가 포함되는 실행일 때): 백엔드를 정한다 — 사용자 지정("antigravity로"/"codex로"/"GLM·zai로") > `WEBTOON_RENDERER` > auto(agy 설치 → codex 로그인 → `ZAI_API_KEY`). antigravity면 `agy` 설치 확인(없으면 `curl -fsSL https://antigravity.google/cli/install.sh | bash` 안내, 첫 실행 시 Google 로그인). codex면 `codex --version`·`codex login status`(출력이 stderr) 확인 후 미로그인 시 재인증 요청. zai면 `ZAI_API_KEY` 확인 후 없으면 발급 안내. zai는 이미지 1장당 과금임을 미리 안내.
 
 ### Phase 2: 트렌드 리서치 (리서치팀)
 

@@ -127,14 +127,25 @@ panel_*.png(말풍선 포함) → index.html(오버레이 없음) → qa_report 
 이 저장소는 [ZCode](https://z.ai) 하네스입니다. `.zcode/` 디렉토리와 `AGENTS.md`를 작업 프로젝트 루트에 두고 ZCode를 실행하세요.
 
 ```bash
-# 1) 하네스를 프로젝트에 배치
+# 1) 시리즈 컨테이너를 만들고 하네스를 배치 (여러 이야기를 한 곳에서 관리)
 git clone https://github.com/cool25th/webtoon-harness.git
-cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md /path/to/your-project/
+mkdir webtoon-series && cp -r webtoon-harness/.zcode webtoon-harness/AGENTS.md webtoon-series/
 
 # 2) 렌더 백엔드 설치·인증 원스톱 (대화형 — antigravity/codex/zai 중 선택)
-bash /path/to/your-project/.zcode/skills/webtoon-panel-render/scripts/setup_backend.sh
+bash webtoon-series/.zcode/skills/webtoon-panel-render/scripts/setup_backend.sh
 
-# 3) 해당 프로젝트를 워크스페이스로 ZCode 실행
+# 3) webtoon-series를 워크스페이스로 ZCode 실행
+```
+
+새 이야기를 요청하면 오케스트레이터가 `webtoon-series/{스토리 제목}/` 폴더를 자동 생성하고, 그 안의 `_workspace/`와 `RELEASE/ep{NN}/`에 모든 산출물을 저장합니다. 이야기가 늘어나면 폴더만 늘어납니다:
+
+```
+webtoon-series/
+├── .zcode/  AGENTS.md     ← 하네스 (시리즈 전체 공유)
+├── 수능-편지-미스터리/      ← 이야기 1
+│   └── _workspace/ … RELEASE/ep001/index.html
+└── 야간-편의점/            ← 이야기 2
+    └── _workspace/ …
 ```
 
 그다음 ZCode 세션에서 자연어로 요청합니다:
