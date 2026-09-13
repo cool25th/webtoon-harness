@@ -88,12 +88,18 @@ fi
 
 render_one() { # $1=prompt $2=file $3=log ($4=idx는 공통 호출 규약용, 미사용)
   local prompt="$1" file="$2" log="$3"
+  # OUT_DIR가 절대경로면 "./"를 붙이지 않는다(cd 후 상대 해석으로 다른 위치에 저장되는 사고 방지)
+  if [ "${OUT_DIR#/}" != "$OUT_DIR" ]; then
+    local save_path="${OUT_DIR}/${file}"
+  else
+    local save_path="./${OUT_DIR}/${file}"
+  fi
   {
     echo "--- agy 렌더 시작: $(date '+%H:%M:%S') ---"
     cd "$ROOT" || exit 1
     # --output-format json: 기본 print(텍스트) 모드에서 이미지 생성 후 파일 저장이
     # 누락되는 실측 문제(텍스트 모드 5회 연속 "파일 미생성", json 모드 2회 성공) 회피.
-    "$AGY_BIN" --dangerously-skip-permissions --output-format json -p "${ANCHOR_INSTRUCTION}${SCENE_REFS_INSTRUCTION}Generate an image with your image generation capability. Image prompt: ${prompt}. The image must be ${AGY_ASPECT}. Natural human anatomy: exactly two arms and two hands attached to the body, each hand with five fingers; a prop is held only by the hand stated in the image prompt. Save it exactly to ./${OUT_DIR}/${file} (create the directory if it does not exist). Report only the saved file path."
+    "$AGY_BIN" --dangerously-skip-permissions --output-format json -p "${ANCHOR_INSTRUCTION}${SCENE_REFS_INSTRUCTION}Generate an image with your image generation capability. Image prompt: ${prompt}. The image must be ${AGY_ASPECT}. Natural human anatomy: exactly two arms and two hands attached to the body, each hand with five fingers; a prop is held only by the hand stated in the image prompt. Save it exactly to ${save_path} (create the directory if it does not exist). Report only the saved file path."
     rc=$?
     echo "--- agy 종료 코드: $rc ---"
     exit $rc

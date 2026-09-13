@@ -48,7 +48,12 @@ render_one() { # $1=prompt $2=file $3=log $4=idx
   prompt="$1" file="$2" log="$3" idx="$4"
   prompt_esc="$(sq_escape "$prompt")"
   md="$LOG_DIR/$(printf '%03d' "$idx")_last.md"
-  instruction="이미지 생성 도구로 '${prompt_esc}' 이미지를 생성하고 ./${OUT_DIR}/${file} 로 저장한다. 성공 시 저장한 파일 경로만 한 줄로 보고."
+  if [ "${OUT_DIR#/}" != "$OUT_DIR" ]; then
+    save_path="${OUT_DIR}/${file}"
+  else
+    save_path="./${OUT_DIR}/${file}"
+  fi
+  instruction="이미지 생성 도구로 '${prompt_esc}' 이미지를 생성하고 ${save_path} 로 저장한다. 성공 시 저장한 파일 경로만 한 줄로 보고."
   (
     cd "$ROOT" || exit 1
     "$CODEX_BIN" exec --sandbox workspace-write --skip-git-repo-check \

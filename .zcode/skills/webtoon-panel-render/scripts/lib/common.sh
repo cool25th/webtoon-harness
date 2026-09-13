@@ -125,11 +125,13 @@ run_waves() {
       i=$((i + 1))
     done
 
-    # 타임아웃 감시: 마감 후 생존 프로세스 강제 종료(정상 종료 시 발화 전 제거)
+    # 타임아웃 감시: 마감 후 생존 프로세스 강제 종료(정상 종료 시 발화 전 제거).
+    # stdio를 /dev/null로 격리 — 안 그러면 kill로 죽은 감시자의 sleep 자식이
+    # 고아가 되어 상위 커맨드 치환의 stdout 파이프를 붙잡고 10분간 hang한다(실측).
     (
       sleep "$RENDER_TIMEOUT_SECS"
       for p in "${WAVE_PIDS[@]}"; do kill "$p" 2>/dev/null; done
-    ) &
+    ) >/dev/null 2>&1 </dev/null &
     WATCHDOG=$!
 
     w=0
@@ -207,7 +209,7 @@ print_summary_and_exit() {
   echo "로그: $LOG_DIR"
 
   if [ "${#FAIL_NAMES[@]}" -eq 0 ] && [ -z "$DUP_GROUPS" ]; then
-    echo "1차 무결성 통과 — 이어서 panel-validator 6축 검증으로."
+    echo "1차 무결성 통과 — 이어서 panel-validator 7축 검증으로."
     exit 0
   fi
   exit 1
