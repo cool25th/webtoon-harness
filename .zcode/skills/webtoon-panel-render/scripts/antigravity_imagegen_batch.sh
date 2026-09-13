@@ -116,12 +116,35 @@ if [ -n "${STYLE_ANCHOR:-}" ]; then
   fi
 fi
 
+# 장면 참조(캐릭터 시트·장소 샘플·직전 승인 패널) — 쉼표 구분 절대경로.
+# "reference every time" 원칙: 생성마다 해당 장면의 인물·장소 참조를 주입해
+# 신원 이탈·화자 변경·배경 무관 이탈을 억제한다(실측 효과).
+SCENE_REFS_INSTRUCTION=""
+if [ -n "${SCENE_REFS:-}" ]; then
+  IFS=',' read -r -a _refs <<< "$SCENE_REFS"
+  _ok=()
+  for _r in "${_refs[@]}"; do
+    _r="$(printf '%s' "$_r" | tr -d '[:space:]')"
+    [ -z "$_r" ] && continue
+    if [ -f "$_r" ]; then
+      _ok+=("$_r")
+    else
+      echo "경고: 장면 참조 파일 없음 — 제외한다: $_r" >&2
+    fi
+  done
+  if [ ${#_ok[@]} -gt 0 ]; then
+    _list=$(_ok[0])
+    for ((_i=1; _i<${#_ok[@]}; _i++)); do _list="$_list, ${_ok[$_i]}"; done
+    SCENE_REFS_INSTRUCTION="Also view these exact files with your file/image reading tool (do NOT search the filesystem): ${_list}. They are the reference sheets and location samples for this scene — keep the characters' faces, hairstyles, identifying marks and clothing 100% identical to the references, and keep the location/background consistent with the location sample. Change only pose, camera and story moment. "
+  fi
+fi
+
 render_one() { # $1=prompt $2=file $3=log
   local prompt="$1" file="$2" log="$3"
   {
     echo "--- agy 렌더 시작: $(date '+%H:%M:%S') ---"
     cd "$ROOT" || exit 1
-    "$AGY_BIN" --dangerously-skip-permissions -p "${ANCHOR_INSTRUCTION}Generate an image with your image generation capability. Image prompt: ${prompt}. The image must be ${AGY_ASPECT}. Save it exactly to ./${OUT_DIR}/${file} (create the directory if it does not exist). Report only the saved file path."
+    "$AGY_BIN" --dangerously-skip-permissions -p "${ANCHOR_INSTRUCTION}${SCENE_REFS_INSTRUCTION}Generate an image with your image generation capability. Image prompt: ${prompt}. The image must be ${AGY_ASPECT}. Save it exactly to ./${OUT_DIR}/${file} (create the directory if it does not exist). Report only the saved file path."
     rc=$?
     echo "--- agy 종료 코드: $rc ---"
     exit $rc
