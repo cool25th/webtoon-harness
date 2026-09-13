@@ -61,7 +61,7 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 | | panel-artist-a | scene 그룹 A 렌더 | webtoon-panel-render | 05_panels/ep{NN}/panel_*.png |
 | | panel-artist-b | scene 그룹 B 렌더 | webtoon-panel-render | 05_panels/ep{NN}/panel_*.png |
 | | panel-artist-c | scene 그룹 C 렌더 | webtoon-panel-render | 05_panels/ep{NN}/panel_*.png |
-| | panel-validator | 패널 6축 검증·재생성 루프 게이트 | webtoon-panel-render | 04_visual/ep{NN}_validation.md |
+| | panel-validator | 패널 7축 검증(C1~C7)·재생성 루프 게이트 | webtoon-panel-render | 04_visual/ep{NN}_validation.md |
 | **조립검수팀** | episode-compositor | 세로 스크롤 뷰어 조립 | webtoon-assembly | 06_assembly/ep{NN}/index.html |
 | | quality-reviewer | QA 검수 | webtoon-assembly | 06_assembly/ep{NN}/qa_report.md |
 | | continuity-manager | 회차 간 연속성 | webtoon-assembly | 06_assembly/continuity.md |
@@ -110,10 +110,11 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 
 1. art-director 스폰(script_final·characters 경로 전달) → `style-bible.md`(작화·**장소 토큰 LOC_***·**말풍선 시각 규약** 포함) + `character-sheets.md`(일관성 토큰+레퍼런스 사양).
 2. **레퍼런스 시트 먼저(일관성 SSOT)**: ref-sheet-artist 스폰(character-sheets·style-bible 경로 전달) → 주요 캐릭터 다각도/표정 레퍼런스를 배치 스크립트로 렌더(동시 ≤5) → `04_visual/refs/` 확정 + INDEX.md. **후속 회차는 refs/가 이미 있으면 스킵하고 기존 INDEX.md를 재사용.** 패널 렌더는 레퍼런스 확정 후 시작.
+3. **스타일 앵커 패널(화풍 SSOT)**: 레퍼런스 직후, 대표 장면 1장을 스타일 샘플로 렌더 → art-director 기준 검증 → `refs/style_anchor.png`로 확정. 이후 모든 렌더 디스패치에 `STYLE_ANCHOR="$PWD/_workspace/04_visual/refs/style_anchor.png"` env를 붙인다(antigravity 백엔드 — 텍스트 토큰만으로는 화풍이 이탈한다, 실측). **후속 회차도 앵커를 재사용해 시리즈 화풍을 유지.**
 3. **콘티+레터링 병렬**: panel-director와 letterer를 background 병렬 스폰. panel-director → `ep{NN}_shotlist.md`(50+ 패널, scene_id/location), letterer → `ep{NN}_lettering.md`(in-image 말풍선 베이크 명세, 한글 짧게).
 4. **프롬프트 합성**: prompt-smith 스폰(style-bible·character-sheets·refs/INDEX.md·shotlist·lettering 경로 전달) → `ep{NN}_prompts.md`(스타일+장소토큰+캐릭터토큰&레퍼런스앵커+말풍선 베이크, scene 그룹 A/B/C 분배). **`no text` 금지(말풍선을 그려야 함)**, 부정은 `no English/gibberish/misspelled text`.
 5. **렌더링 (순차 디스패치)**: panel-artist-a 스폰(그룹 A 패널 번호 목록 전달) → 아티스트가 배치 스크립트로 자기 그룹을 5장 웨이브 렌더 → 완료 보고 수신 → panel-artist-b → 완료 → panel-artist-c. 스크립트가 1차 무결성(0바이트/손상/md5 중복)을 검사하므로, 실패·중복 패널은 보고를 받아 즉시 재렌더 지시(해당 패널만, 1~5장이라면 네가 직접 스크립트 실행).
-6. **검증-재생성 루프 (핵심)**: 각 아티스트 완료 보고가 올 때마다 panel-validator를 스폰해 6축(C1 캐릭터/레퍼런스, C2 배경·장소 연속성, C3 말풍선·한글 텍스트+통합 레터링, C4 프롬프트 충실도, C5 대사 흐름, C6 무결성·md5중복) 검증 → ACCEPT/REGEN 판정을 validation.md에 누적. REGEN 패널은 prompt-smith에게 보강을 시키거나(재스폰) validator의 수정 지시를 그대로 전달하고, 담당 그룹 패널만 재렌더 → validator 재스폰으로 재검증. **패널당 최대 3회**, 초과 시 ACCEPT-FLAG(통과+한계 기록).
+6. **검증-재생성 루프 (핵심)**: 각 아티스트 완료 보고가 올 때마다 panel-validator를 스폰해 7축(C1 캐릭터/레퍼런스, C2 배경·장소 연속성, C3 말풍선·한글 텍스트+통합 레터링, C4 프롬프트 충실도, C5 대사 흐름, C6 무결성·md5중복, C7 스타일 앵커 일치) 검증 → ACCEPT/REGEN 판정을 validation.md에 누적. REGEN 패널은 prompt-smith에게 보강을 시키거나(재스폰) validator의 수정 지시를 그대로 전달하고, 담당 그룹 패널만 재렌더 → validator 재스폰으로 재검증. **패널당 최대 3회**, 초과 시 ACCEPT-FLAG(통과+한계 기록).
 7. 전 패널 통과 시 `04_visual/ep{NN}_validation.md` 완성. 산출물: `04_visual/*`, `05_panels/ep{NN}/panel_*.png`(검증 통과본).
 
 ### Phase 5: 조립 · 검수 (조립검수팀)

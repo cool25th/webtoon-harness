@@ -27,6 +27,15 @@ description: "웹툰 패널 이미지를 선택한 렌더 백엔드(codex exec i
 
 **antigravity 백엔드일 때:** `agy` 설치 여부만 확인한다(`command -v agy` 또는 `~/.local/bin/agy`). 없으면 `curl -fsSL https://antigravity.google/cli/install.sh | bash` 설치를 안내한다. 첫 실행 시 브라우저 Google 로그인이 필요할 수 있다(이후 Keychain 자동). 항목당 에이전트 실행이라 codex보다 느리고(수십 초~수 분) Google 구독 쿼터를 소비한다. `AGY_ASPECT` env로 화면비 지시를 바꿀 수 있다(기본 세로 2:3).
 
+**스타일 앵커 — 화풍 고정 (antigravity 강력 권장, 실측 효과 있음):** 텍스트 스타일 토큰만으로는 복잡한 장면에서 화풍이 이탈한다(실측: 텍스트 전용은 사실적 렌더링으로 드리프트 + 지시 없는 한국어 대사 자체 생성). 해법은 앵커 레퍼런스 이미지 — 확정된 스타일 샘플 패널(`refs/style_anchor.png`)을 `STYLE_ANCHOR` env에 **절대경로**로 넘기면, 배치 스크립트가 매 패널 생성 전에 에이전트가 앵커를 보고 동일 화풍으로 그리도록 지시를 자동 주입한다.
+
+```bash
+STYLE_ANCHOR="$PWD/_workspace/04_visual/refs/style_anchor.png" \
+  scripts/render_batch.sh --from-file _workspace/04_visual/ep{NN}_manifest.txt _workspace/05_panels/ep{NN}
+```
+
+앵커 운영 규약: ① 본 렌더 전에 스타일 샘플 패널 1장을 먼저 렌더·검증해 확정한다(캐릭터 refs와 함께 SSOT). ② 절대경로 필수 — 상대경로면 에이전트가 파일시스템을 뒤지다 agy의 5분 print 타임아웃에 걸린다. ③ 앵커 파일이 없으면 경고 후 앵커 없이 렌더하므로, 없음이 확인되면 스킵하지 말고 앵커부터 만든다.
+
 **codex 백엔드일 때:**
 
 ```bash
@@ -172,6 +181,7 @@ md5 -r _workspace/05_panels/ep{NN}/panel_*.png | awk '{print $1}' | sort | uniq 
 4. **C4 프롬프트 충실도** — 샷 사이즈/앵글/구도/감정/상태색이 의도대로인가.
 5. **C5 대사 흐름** — 앞뒤 패널과 이어 읽어 대화가 자연스러운가.
 6. **C6 기술 무결성** — 0바이트/손상/md5 중복 아님, 경로·번호 정확.
+7. **C7 스타일 앵커 일치**(앵커 있을 때) — 선 굵기·채색·셰이딩이 `refs/style_anchor.png`와 같은 화풍인가. 사실화 이탈·질감 과잉은 REGEN. **지시 없는 대사 자체 추가도 여기서 잡는다**(실측 위험).
 
 **루프**: 패널마다 ACCEPT / REGEN(사유+수정 지시). REGEN → prompt-smith가 그 패널 프롬프트만 보강(배경 급변→장소 토큰 강화, 한글 깨짐→텍스트 따옴표·굵게·짧게, 외형 이탈→레퍼런스 앵커·표식 강조, 구도 어긋남→앵글 명시) → 담당 panel-artist가 그 패널만 재렌더 → 재검사. **패널당 최대 3회.** 3회 후에도 미달이면 가장 나은 버전을 **ACCEPT-FLAG**(통과+한계 명시)로 마감하고 `ep{NN}_validation.md`에 기록(무한 루프 방지). C3(한글)이 3회 실패하면 "말풍선 모양 유지 + 가장 정확한 텍스트 버전 채택"으로 마감하고 quality-reviewer에 플래그.
 

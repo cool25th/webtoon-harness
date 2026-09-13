@@ -14,8 +14,12 @@
 # Env:
 #   AGY_BIN            (기본 agy — PATH에 없으면 ~/.local/bin/agy 자동 사용)
 #   AGY_ASPECT         (기본 "portrait 2:3 aspect ratio, tall vertical composition")
+#   STYLE_ANCHOR       (선택) 화풍 고정용 참조 이미지 절대경로. 지정 시 매 패널 생성 전에
+#                      에이전트가 이 이미지를 먼저 보고 동일 화풍으로 생성한다(스타일 드리프트 억제 — 실측 효과 있음).
+#                      절대경로 필수. 예: _workspace/04_visual/refs/style_anchor.png 의 절대경로.
 #   CONCURRENCY        (기본 5) 동시 실행 수. 5 초과는 거부.
-#   AGY_TIMEOUT_SECS   (기본 600) 항목당 타임아웃. 에이전트 실행이므로 여유 있음.
+#   AGY_TIMEOUT_SECS   (기본 600) 항목당 타임아웃. 단, agy print 모드 자체가 5분(300s) 하드 타임아웃이므로
+#                      앵커 열람 등 다단계 요청도 5분 안에 끝나도 지시를 간결하게 유지할 것.
 #
 # 출력: 사람이 읽는 요약(성공/실패/중복 패널 명시). 종료 코드 0=전 항목 유효, 1=문제 있음.
 set -u
@@ -101,12 +105,23 @@ TOTAL=${#PROMPTS[@]}
 
 ROOT="$(pwd)"
 
+# 스타일 앵커(화풍 고정용 참조 이미지) — STYLE_ANCHOR env에 절대경로로 지정하면
+# 매 패널 생성 전에 에이전트가 이 이미지를 보고 동일 화풍으로 생성한다.
+ANCHOR_INSTRUCTION=""
+if [ -n "${STYLE_ANCHOR:-}" ]; then
+  if [ -f "$STYLE_ANCHOR" ]; then
+    ANCHOR_INSTRUCTION="First, use your file/image reading tool on the exact absolute path ${STYLE_ANCHOR} (do NOT search the filesystem, do NOT use find or ls) to view it — it defines the target art style (line weight, coloring, cel shading, rendering). Then generate the image in exactly that art style. "
+  else
+    echo "경고: STYLE_ANCHOR 파일 없음 — 앵커 없이 렌더한다: $STYLE_ANCHOR" >&2
+  fi
+fi
+
 render_one() { # $1=prompt $2=file $3=log
   local prompt="$1" file="$2" log="$3"
   {
     echo "--- agy 렌더 시작: $(date '+%H:%M:%S') ---"
     cd "$ROOT" || exit 1
-    "$AGY_BIN" --dangerously-skip-permissions -p "Generate an image with your image generation capability. Image prompt: ${prompt}. The image must be ${AGY_ASPECT}. Save it exactly to ./${OUT_DIR}/${file} (create the directory if it does not exist). Report only the saved file path."
+    "$AGY_BIN" --dangerously-skip-permissions -p "${ANCHOR_INSTRUCTION}Generate an image with your image generation capability. Image prompt: ${prompt}. The image must be ${AGY_ASPECT}. Save it exactly to ./${OUT_DIR}/${file} (create the directory if it does not exist). Report only the saved file path."
     rc=$?
     echo "--- agy 종료 코드: $rc ---"
     exit $rc
