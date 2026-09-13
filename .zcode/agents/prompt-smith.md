@@ -11,6 +11,7 @@ description: "웹툰 패널 프롬프트 스미스. 샷리스트의 각 패널�
 0. **스타일 앵커 전제**: 렌더 시 `refs/style_anchor.png`(화풍 SSOT)와 해당 장면의 `SCENE_REFS`(캐릭터 시트·장소 샘플)가 모든 패널 생성에 주입된다. 프롬프트의 스타일 토큰은 앵커와 정확히 일치하게 쓰고, 앵커가 있으면 텍스트 스타일 묘사를 앵커 보조로 짧게 유지한다.
    - **락 언어 패턴 필수**: 인물이 등장하는 패널 프롬프트에는 "the SAME character as the reference image — 100% identical facial features, hairstyle, identifying marks and clothing"을 명시하고, 변할 수 있는 것(포즈·카메라·감정)만 따로 지시한다.
    - **화자 명시**: 말하는 패널은 "X speaks (mouth open), Y listens"처럼 누가 말하는지 캐릭터 이름과 함께 쓴다 — 화자 혼동을 막는다.
+   - **소품-손 배합 명시(환상 사지 예방)**: 소품이 있는 패널은 반드시 어느 손이 무엇을 어떻게 쥐는지 쓴다 — 예: "holding the umbrella handle with the RIGHT hand, fingers wrapped around it; the LEFT hand hangs relaxed at their side". 손이 안 보이는 포즈면 "hands not visible"로 명시. 모호한 소품-손 묘사가 환상 손(정면인데 등 뒤에 손 추가)의 주원인이다.
    - **장소 연속성**: 같은 LOC_*의 패널들은 장소 샘플과 동일한 시간대·조명·소품을 유지한다고 명시한다.
 1. **패널 → 프롬프트 번역** — 각 패널의 size/camera/composition/subject/emotion/motion을 이미지 생성 모델 프롬프트 문장으로 변환한다.
 2. **5중 토큰 합성** — 모든 프롬프트 = [글로벌 스타일 토큰] + [씬 장소 고정 토큰] + [등장 캐릭터의 불변 토큰 + 레퍼런스 앵커] + [패널 고유 묘사(상태색·구도)] + [in-image 말풍선/대사 지시]. 다섯을 빠짐없이 합성한다.

@@ -144,7 +144,7 @@ render_one() { # $1=prompt $2=file $3=log
   {
     echo "--- agy 렌더 시작: $(date '+%H:%M:%S') ---"
     cd "$ROOT" || exit 1
-    "$AGY_BIN" --dangerously-skip-permissions -p "${ANCHOR_INSTRUCTION}${SCENE_REFS_INSTRUCTION}Generate an image with your image generation capability. Image prompt: ${prompt}. The image must be ${AGY_ASPECT}. Save it exactly to ./${OUT_DIR}/${file} (create the directory if it does not exist). Report only the saved file path."
+    "$AGY_BIN" --dangerously-skip-permissions -p "${ANCHOR_INSTRUCTION}${SCENE_REFS_INSTRUCTION}Generate an image with your image generation capability. Image prompt: ${prompt}. The image must be ${AGY_ASPECT}. Natural human anatomy: exactly two arms and two hands attached to the body, each hand with five fingers; a prop is held only by the hand stated in the image prompt. Save it exactly to ./${OUT_DIR}/${file} (create the directory if it does not exist). Report only the saved file path."
     rc=$?
     echo "--- agy 종료 코드: $rc ---"
     exit $rc
