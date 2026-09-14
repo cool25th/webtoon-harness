@@ -209,7 +209,7 @@ print_summary_and_exit() {
   echo "로그: $LOG_DIR"
 
   if [ "${#FAIL_NAMES[@]}" -eq 0 ] && [ -z "$DUP_GROUPS" ]; then
-    echo "1차 무결성 통과 — 이어서 panel-validator 7축 검증으로."
+    echo "1차 무결성 통과 — 이어서 panel-validator 8축 검증으로."
     exit 0
   fi
   exit 1

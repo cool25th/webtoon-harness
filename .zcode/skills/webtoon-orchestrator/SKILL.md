@@ -126,8 +126,9 @@ description: "웹툰 제작 에이전트 팀(27명)을 조율하는 메인 오�
 3. **콘티+레터링 병렬**: panel-director와 letterer를 background 병렬 스폰. panel-director → `ep{NN}_shotlist.md`(50+ 패널, scene_id/location), letterer → `ep{NN}_lettering.md`(in-image 말풍선 베이크 명세, 한글 짧게).
 4. **프롬프트 합성**: prompt-smith 스폰(style-bible·character-sheets·refs/INDEX.md·shotlist·lettering 경로 전달) → `ep{NN}_prompts.md`(스타일+장소토큰+캐릭터토큰&레퍼런스앵커+말풍선 베이크, scene 그룹 A/B/C 분배). **`no text` 금지(말풍선을 그려야 함)**, 부정은 `no English/gibberish/misspelled text`.
 5. **렌더링 (순차 디스패치, 장면 참조 주입)**: 패널을 scene 그룹별로 묶어 순차 디스패치한다. 각 디스패치에는 **그 장면의 참조 이미지를 `SCENE_REFS` env(쉼표 구분 절대경로)로 함께 전달**한다: 해당 그룹 패널에 등장하는 캐릭터의 refs 시트 + 그 장소의 `refs/LOC_*.png` + (같은 씬 연속이면) 직전 승인 패널. 배치 스크립트가 "얼굴·의상·장소 100% 동일 유지, 포즈/카메라/스토리 모먼트만 변경" 지시를 자동 주입한다("reference every time" 원칙 — 생성기가 시트를 못 보면 검증용 시트는 무의미하다, 실측). panel-artist-a → 완료 보고 → b → c. 스크립트가 1차 무결성(0바이트/손상/md5 중복)을 검사하므로, 실패·중복 패널은 보고를 받아 즉시 재렌더 지시(해당 패널만, 1~5장이라면 네가 직접 스크립트 실행).
-6. **검증-재생성 루프 (핵심)**: 각 아티스트 완료 보고가 올 때마다 panel-validator를 스폰해 7축(C1 캐릭터/레퍼런스, C2 배경·장소 연속성, C3 말풍선·한글 텍스트+통합 레터링, C4 프롬프트 충실도, C5 대사 흐름, C6 무결성·md5중복, C7 스타일 앵커 일치) 검증 → ACCEPT/REGEN 판정을 validation.md에 누적. REGEN 패널은 prompt-smith에게 보강을 시키거나(재스폰) validator의 수정 지시를 그대로 전달하고, 담당 그룹 패널만 재렌더 → validator 재스폰으로 재검증. **패널당 최대 3회**, 초과 시 ACCEPT-FLAG(통과+한계 기록).
-7. 전 패널 통과 시 `04_visual/ep{NN}_validation.md` 완성. 산출물: `04_visual/*`, `05_panels/ep{NN}/panel_*.png`(검증 통과본).
+6. **검증-재생성 루프 (핵심)**: 각 아티스트 완료 보고가 올 때마다 panel-validator를 스폰해 8축(C1 캐릭터·해부학, C2 배경·장소 연속성, C3 말풍선·한글 텍스트+통합 레터링, C4 프롬프트 충실도, C5 대사 흐름, C6 무결성·md5중복, C7 스타일 앵커 일치, C8 교차 패널 스토리 장치 대조) 검증 → ACCEPT/REGEN 판정을 validation.md에 누적. REGEN 패널은 prompt-smith에게 보강을 시키거나(재스폰) validator의 수정 지시를 그대로 전달하고, 담당 그룹 패널만 재렌더 → validator 재스폰으로 재검증. **패널당 최대 3회**, 초과 시 ACCEPT-FLAG(통과+한계 기록).
+7. 전 패널 통과 시 `04_visual/ep{NN}_validation.md` 완성 — **승인 패널 해시(APPROVED-MD5) 포함**. validation.md의 최종 판정 요약이 마지막 라운드 기준으로 갱신돼 있고, REGEN 미해결 패널이 없는지(ACCEPT·ACCEPT-FLAG만 남았는지) 확인한다.
+8. 산출물: `04_visual/*`, `05_panels/ep{NN}/panel_*.png`(검증 통과본). **조립 전 게이트**: episode-compositor가 승인 해시와 실제 파일 md5를 대조 — 불일치·미검증 패널은 재검증 전 조립 금지.
 
 ### Phase 5: 조립 · 검수 (조립검수팀)
 

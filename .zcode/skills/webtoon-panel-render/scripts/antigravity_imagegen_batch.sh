@@ -80,7 +80,7 @@ if [ -n "${SCENE_REFS:-}" ]; then
     fi
   done
   if [ ${#_ok[@]} -gt 0 ]; then
-    _list=$(_ok[0])
+    _list=${_ok[0]}
     for ((_i=1; _i<${#_ok[@]}; _i++)); do _list="$_list, ${_ok[$_i]}"; done
     SCENE_REFS_INSTRUCTION="Also view these exact files with your file/image reading tool (do NOT search the filesystem): ${_list}. They are the reference sheets and location samples for this scene — keep the characters' faces, hairstyles, identifying marks and clothing 100% identical to the references, and keep the location/background consistent with the location sample. Change only pose, camera and story moment. "
   fi

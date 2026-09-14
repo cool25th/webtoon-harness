@@ -43,6 +43,26 @@ EP01에서 13장(P30·P33 + P9·10·14·27·31·35·36·40·43·54·57)이 "한�
 3. **교차 비교 스윕(1차 6축 통과 후 필수 2차 패스).** 텍스트 보유 패널만 모아 레터링을 나란히 비교한다. 다른 패널은 손잉크인데 한 패널만 디지털 폰트로 튀면 그 패널을 OVERLAY로 REGEN. 개별 검사가 놓치는 드리프트를 교차 비교가 잡는다(EP01 누락의 직접 원인 → 이 패스로 차단).
 4. **REGEN 수정 지시.** OVERLAY 패널은 prompt-smith에 "레터링 표현 교체"를 지시한다 — `bold clean gothic hangul`·`bold dynamic gothic` 류를 `hand-lettered in the same bold black comic ink as the artwork, integrated into the drawing (NOT a flat typeset/digital-font label pasted on top)`로 바꾸고, 부정 프롬프트에 `no typeset overlay text`를 추가.
 
+## C8 교차 패널 스토리 장치 대조 (출고 전 필수)
+
+script_final·shotlist에 명시된 **스토리 크리티컬 시각 장치**(식별 표식의 좌우 위치, 시계·시간 표기, 소품 유무, 인물 위치)는 패널 단위 검사로는 못 잡는다 — 지정된 페어/시퀀스를 **나란히 읽고 대조**한다. (ep01 실측: P01 반창고 좌우 오류를 1차 검증이 잡았으나, 재렌더 파일 재검증 누락으로 출고물에 잔존.)
+
+- 좌우 판정은 **크롭 대조법**을 쓴다: 이미지를 좌/우 절반으로 잘라 각각 따로 판정하면 3/4 각도 얼굴에서의 좌우 오판(실측 발생)을 막는다.
+- 판정 요약(문서 상단)은 **마지막 라운드 기준 최종 상태**로 갱신을 강제한다 — 구형 요약이 남으면 미해결 REGEN이 출고된다(실측 발생).
+- 재렌더된 파일은 **반드시 재검증**하고, 타임스탬프가 검증 시점보다 늦은 패널은 "미검증"으로 표기한다.
+
+## 승인 패널 해시 핀 (APPROVED-MD5 — 조립 전 무결성 게이트)
+
+validation.md 마지막에 다음 형식으로 **승인(ACCEPT·ACCEPT-FLAG) 패널의 md5**를 기록한다:
+
+```
+## 승인 패널 해시 (APPROVED-MD5)
+panel_001.png <md5>
+panel_002.png <md5>
+```
+
+조립(episode-compositor)은 이 표와 실제 파일 md5를 대조한다 — **불일치 패널은 검증 후 덮어쓰인 것이므로 재검증 전 조립 금지**. REGEN(미해결) 패널은 조립 금지(ACCEPT-FLAG만 출고 가능).
+
 ## 판정과 재생성 루프
 - 패널마다 **ACCEPT** 또는 **REGEN**(사유 + 구체 수정 지시) 판정.
 - REGEN 시: 해당 패널의 수정 지시를 **prompt-smith**에 보내 프롬프트를 보강(예: "배경을 LOC_SUBWAY 토큰으로 고정", "말풍선 한글 '걔가 누군데?' 정확히, 굵은 고딕, 우상단", "레퍼런스 도현 왼눈밑 점 누락 → 강조")하게 하고, 담당 **panel-artist**가 그 패널만 재렌더 → 당신이 재검증.
