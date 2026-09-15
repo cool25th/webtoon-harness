@@ -227,6 +227,19 @@ quality-reviewer가 FIX/REDO로 지정한 패널만 재렌더한다. 전체를 �
 - 화풍 일관성이 자동 경로보다 무너지기 쉬우므로, 수동 패널은 C7(스타일 앵커) 검사를 가장 엄격히 본다.
 - zai는 키 잔액만 충전되면 즉시 자동 경로로 복구되는 1차 대안이므로, 수동 폴백은 그마저 막혔을 때 쓴다.
 
+### 자동 경로 복구 확인 (서비스 복구 시 1장 테스트)
+
+자동 백엔드가 복구되면 아래 1장 테스트로 확인 후 정상 경로로 복귀한다 (종료 코드 0 + 유효 PNG가 통과 기준, 실패 사유는 요약·로그에 출력):
+
+```bash
+# codex 한도 해제 확인 (매주 리셋 — 실패 시 다음 리셋까지 대기)
+WEBTOON_RENDERER=codex bash .zcode/skills/webtoon-panel-render/scripts/render_batch.sh out "simple test circle::v.png"
+# zai 충전 확인 (키: export ZAI_API_KEY=... 또는 ~/.zai_api_key)
+WEBTOON_RENDERER=zai bash .zcode/skills/webtoon-panel-render/scripts/render_batch.sh out "simple test circle::v.png"
+```
+
+복구 이력: 2026-09-15 codex 사용량 한도 도달 → 2026-09-19 20:22 해제 예정. 이 기간 렌더는 antigravity 또는 수동 폴백 사용.
+
 ## 비용 주의
 
 - **codex**: 각 호출이 독립 세션 → 토큰·플랜 메시지 한도를 N배 소모한다. 헤비 배치(50장+) 전 `codex login status`로 플랜 잔량을 확인한다.

@@ -13,6 +13,8 @@ description: "웹툰 패널 프롬프트 스미스. 샷리스트의 각 패널�
    - **화자 명시**: 말하는 패널은 "X speaks (mouth open), Y listens"처럼 누가 말하는지 캐릭터 이름과 함께 쓴다 — 화자 혼동을 막는다.
    - **소품-손 배합 명시(환상 사지 예방 — 상세 결함별 예방 패턴은 `.zcode/skills/webtoon-panel-render/references/defect-checklist.md`의 [예방] 열을 따른다)**: 소품이 있는 패널은 반드시 어느 손이 무엇을 어떻게 쥐는지 쓴다 — 예: "holding the umbrella handle with the RIGHT hand, fingers wrapped around it; the LEFT hand hangs relaxed at their side". 손이 안 보이는 포즈면 "hands not visible"로 명시. 모호한 소품-손 묘사가 환상 손(정면인데 등 뒤에 손 추가)의 주원인이다.
    - **장소 연속성**: 같은 LOC_*의 패널들은 장소 샘플과 동일한 시간대·조명·소품을 유지한다고 명시한다.
+   - **표정·소품 수량 LOCK**: 감정과 소품 수량은 캐릭터 LOCK 블록 안에서 긍정형 고정 — 예: "gentle plain friendly smile"(표정), "carrying EXACTLY TWO white bags, one per hand"(수량). 네거티브 나열만으로는 수량·표정이 흔들린다(P051 2회 실측).
+   - **소품 화이트리스트**: 프롬프트 말미에 "no props other than [해당 장면 소품 목록]"을 병기해 지시 외 소품 생성을 차단한다(ep01 「ICE」 선례).
 1. **패널 → 프롬프트 번역** — 각 패널의 size/camera/composition/subject/emotion/motion을 이미지 생성 모델 프롬프트 문장으로 변환한다.
 2. **5중 토큰 합성** — 모든 프롬프트 = [글로벌 스타일 토큰] + [씬 장소 고정 토큰] + [등장 캐릭터의 불변 토큰 + 레퍼런스 앵커] + [패널 고유 묘사(상태색·구도)] + [in-image 말풍선/대사 지시]. 다섯을 빠짐없이 합성한다.
 3. **레퍼런스 앵커 주입** — 등장 캐릭터마다 `_workspace/04_visual/refs/{IDTAG}_*.png` 레퍼런스 시트를 외형 기준으로 참조하도록 프롬프트에 명시한다(예: "match the exact appearance of {IDTAG} as defined in the locked character reference sheet: <불변 토큰>"). 토큰만이 아니라 확정 레퍼런스가 일관성의 닻이다.
