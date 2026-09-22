@@ -7,6 +7,8 @@
 # Usage:
 #   scripts/render_batch.sh <output_dir> "<image prompt>::<file>.png" [more...]
 #   scripts/render_batch.sh --from-file <manifest.txt> <output_dir>
+#   scripts/render_batch.sh --resume --from-file <manifest.txt> <output_dir>
+#     - 인자는 선택된 백엔드 스크립트에 그대로 전달된다(--resume 포함 — 원장 기반 무손실 재개).
 #
 # 백엔드 선택 (env WEBTOON_RENDERER):
 #   antigravity  Google Antigravity CLI(agy) — Google 계정 구독 쿼터, 별도 키 불필요

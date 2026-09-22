@@ -8,6 +8,9 @@
 #   scripts/codex_imagegen_batch.sh <output_dir> "<image prompt>::<file>.png" [more...]
 #   scripts/codex_imagegen_batch.sh --from-file <manifest.txt> <output_dir>
 #     - manifest 한 줄 = "<image prompt>::<file>.png" (빈 줄과 # 주석은 무시)
+#   scripts/codex_imagegen_batch.sh --resume --from-file <manifest.txt> <output_dir>
+#     - --resume: 누적 원장(.render_logs/_ledger.tsv)에서 동일 프롬프트 해시로 이미 OK인
+#       항목은 재렌더하지 않고 승계한다(중단 후 무손실 재개).
 #
 # 프로젝트 루트(_workspace/가 있는 디렉토리)에서 실행할 것. output_dir는 그 기준
 # 상대경로(예: _workspace/05_panels/ep01).
@@ -27,6 +30,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEFAULT_TIMEOUT_SECS=600
 LEGACY_TIMEOUT_VAR="CODEX_TIMEOUT_SECS"
 REASON_FILE_MISSING="파일 미생성(codex가 저장 경로 지시를 무시 — 프롬프트의 './경로로 저장' 강화 후 재시도)"
+BACKEND_ID="codex"
 
 CONCURRENCY="${CONCURRENCY:-5}"
 CODEX_BIN="${CODEX_BIN:-codex}"
@@ -44,10 +48,11 @@ render_fail_reason() { # $1=idx — 실패 사유에 종료 코드를 포함
 
 # 항목 1개 렌더: codex exec 세션 1회(성공 시 0). 저장 경로·보고 형식은 지시문에 포함.
 render_one() { # $1=prompt $2=file $3=log $4=idx
-  local prompt file log idx prompt_esc md instruction
+  local prompt file log idx prompt_esc md instruction stem
   prompt="$1" file="$2" log="$3" idx="$4"
   prompt_esc="$(sq_escape "$prompt")"
-  md="$LOG_DIR/$(printf '%03d' "$idx")_last.md"
+  stem="${file##*/}"; stem="${stem%.*}"
+  md="$LOG_DIR/${stem}_last.md"
   if [ "${OUT_DIR#/}" != "$OUT_DIR" ]; then
     save_path="${OUT_DIR}/${file}"
   else
@@ -64,8 +69,13 @@ render_one() { # $1=prompt $2=file $3=log $4=idx
 parse_items "$@"
 
 command -v "$CODEX_BIN" >/dev/null 2>&1 || { echo "codex CLI 없음: $CODEX_BIN" >&2; exit 2; }
+BACKEND_VERSION="$("$CODEX_BIN" --version 2>/dev/null | head -n1)"
+: "${BACKEND_VERSION:=unknown}"
+init_ledger
 
 echo "=== codex_imagegen_batch: 총 $TOTAL 항목, 동시 $CONCURRENCY, 타임아웃 ${RENDER_TIMEOUT_SECS}s ==="
+compute_item_meta
+apply_resume
 run_waves
 integrity_check
 print_summary_and_exit

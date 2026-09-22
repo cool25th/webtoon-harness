@@ -8,6 +8,9 @@
 # Usage:
 #   scripts/antigravity_imagegen_batch.sh <output_dir> "<image prompt>::<file>.png" [more...]
 #   scripts/antigravity_imagegen_batch.sh --from-file <manifest.txt> <output_dir>
+#   scripts/antigravity_imagegen_batch.sh --resume --from-file <manifest.txt> <output_dir>
+#     - --resume: 누적 원장(.render_logs/_ledger.tsv)에서 동일 프롬프트 해시로 이미 OK인
+#       항목은 재렌더하지 않고 승계한다(중단 후 무손실 재개).
 #
 # 프로젝트 루트(_workspace/가 있는 디렉토리)에서 실행할 것.
 #
@@ -34,6 +37,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEFAULT_TIMEOUT_SECS=600
 LEGACY_TIMEOUT_VAR="AGY_TIMEOUT_SECS"
 REASON_RENDER_FAIL="agy 렌더 실패(타임아웃 또는 에이전트 오류) — 로그 참고"
+BACKEND_ID="antigravity"
 
 CONCURRENCY="${CONCURRENCY:-5}"
 AGY_ASPECT="${AGY_ASPECT:-portrait 2:3 aspect ratio, tall vertical composition}"
@@ -50,7 +54,12 @@ fi
 init_md5
 init_timeout
 
+# 원장 메타데이터용 버전 프로브 — 모델/CLI 변경 시 결함률 비교의 기준점.
+BACKEND_VERSION="$("$AGY_BIN" --version 2>/dev/null | head -n1)"
+: "${BACKEND_VERSION:=unknown}"
+
 parse_items "$@"
+init_ledger
 
 # 스타일 앵커(화풍 고정용 참조 이미지) — STYLE_ANCHOR env에 절대경로로 지정하면
 # 매 패널 생성 전에 에이전트가 이 이미지를 보고 동일 화풍으로 생성한다.
@@ -107,6 +116,8 @@ render_one() { # $1=prompt $2=file $3=log ($4=idx는 공통 호출 규약용, �
 }
 
 echo "=== antigravity_imagegen_batch: 총 $TOTAL 항목, 동시 $CONCURRENCY, 타임아웃 ${RENDER_TIMEOUT_SECS}s ==="
+compute_item_meta
+apply_resume
 run_waves
 integrity_check
 print_summary_and_exit

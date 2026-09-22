@@ -9,6 +9,9 @@
 #   scripts/zai_imagegen_batch.sh <output_dir> "<image prompt>::<file>.png" [more...]
 #   scripts/zai_imagegen_batch.sh --from-file <manifest.txt> <output_dir>
 #     - manifest 한 줄 = "<image prompt>::<file>.png" (빈 줄과 # 주석은 무시)
+#   scripts/zai_imagegen_batch.sh --resume --from-file <manifest.txt> <output_dir>
+#     - --resume: 누적 원장(.render_logs/_ledger.tsv)에서 동일 프롬프트 해시로 이미 OK인
+#       항목은 재렌더하지 않고 승계한다(중단 후 무손실 재개).
 #
 # 프로젝트 루트(_workspace/가 있는 디렉토리)에서 실행할 것.
 #
@@ -31,6 +34,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEFAULT_TIMEOUT_SECS=300
 LEGACY_TIMEOUT_VAR="ZAI_TIMEOUT_SECS"
 REASON_RENDER_FAIL="렌더 실패(생성 API/다운로드/타임아웃) — 로그 참고"
+BACKEND_ID="zai"
 
 CONCURRENCY="${CONCURRENCY:-5}"
 ZAI_API_BASE="${ZAI_API_BASE:-https://api.z.ai/api/paas/v4}"
@@ -94,7 +98,11 @@ print(data[0]["url"])
 }
 
 parse_items "$@"
+BACKEND_VERSION="${ZAI_IMAGE_MODEL}/${ZAI_IMAGE_SIZE}"
+init_ledger
 echo "=== zai_imagegen_batch: 총 $TOTAL 항목, 동시 $CONCURRENCY, 모델 $ZAI_IMAGE_MODEL ${ZAI_IMAGE_SIZE}, 타임아웃 ${RENDER_TIMEOUT_SECS}s ==="
+compute_item_meta
+apply_resume
 run_waves
 integrity_check
 print_summary_and_exit

@@ -13,13 +13,13 @@ description: "웹툰 패널 이미지를 선택한 렌더 백엔드(codex exec i
 - **codex**(ChatGPT OAuth 필요) — `scripts/codex_imagegen_batch.sh`
 - **zai**(Z.ai GLM-Image API, `ZAI_API_KEY` 필요) — `scripts/zai_imagegen_batch.sh`. 기본 모델 `glm-image`, 기본 크기 `1056x1568`(세로 스크롤 패널). `ZAI_IMAGE_QUALITY=standard`로 고속 모드.
 - **선택**: 세 스크립트를 직접 쓰지 말고 디스패처 `scripts/render_batch.sh`를 호출한다. `WEBTOON_RENDERER` 환경변수(`antigravity`|`codex`|`zai`|`auto`, 기본 `auto`)로 백엔드를 고른다 — auto는 agy 설치 → antigravity, codex 로그인 → codex, `ZAI_API_KEY` → zai 순으로 고른다. 사용자가 백엔드를 지정하면 그 값을 쓴다.
-- 세 백엔드 스크립트는 인터페이스가 동일하다: 임의 개수 항목을 동시 5장 웨이브 실행, 항목당 타임아웃 감시(공통 env `RENDER_TIMEOUT_SECS`), 완료 후 0바이트/손상(PNG·JPEG 허용)/**md5 중복** 자동 검사·요약 보고. 웨이브·타임아웃·무결성·요약 공통 로직은 `scripts/lib/common.sh`에 있고, 각 백엔드 스크립트는 자기 렌더 함수만 정의한다.
+- 세 백엔드 스크립트는 인터페이스가 동일하다: 임의 개수 항목을 동시 5장 웨이브 실행, 항목당 타임아웃 감시(공통 env `RENDER_TIMEOUT_SECS`), 완료 후 0바이트/손상(PNG·JPEG 허용)/**md5 중복** 자동 검사·요약 보고. 웨이브·타임아웃·무결성·요약 공통 로직은 `scripts/lib/common.sh`에 있고, 각 백엔드 스크립트는 자기 렌더 함수만 정의한다. 모든 실행은 **누적 원장**(`.render_logs/_ledger.tsv`)에 기록된다 — 백엔드·버전·프롬프트 해시·시도 횟수·md5·상태(아래 "렌더 원장과 무손실 재개" 참조).
 
 핵심 4원칙(EP01 제작 피드백 반영):
 1. **레퍼런스 먼저(일관성).** 패널을 그리기 전에 캐릭터 다각도/표정 레퍼런스 시트를 먼저 렌더해 외형 기준(SSOT)을 확정한다. 텍스트 토큰만으로는 매번 다른 얼굴이 나온다.
 2. **모든 텍스트 in-image 베이크(후작업 절대 금지).** 말풍선 대사·효과음·화면 UI·환경 문자 등 **모든 텍스트를 이미지 생성 시 작화에 함께 그린다**(HTML 오버레이도, 포토샵 타이핑도, 어떤 후작업 합성도 없다). 그래서 "no text" 부정 프롬프트를 쓰지 않는다. 또한 결과가 **베이크처럼 보여야** 한다 — 텍스트는 작화와 같은 손그림 잉크 톤으로 녹아들어야 하고, 깨끗한 디지털 폰트를 평평하게 얹은 "붙여넣기" 느낌이면 실패(통합 레터링, EP01 P30·P33 피드백).
 3. **배경 씬 단위 고정.** 씬별 장소 토큰(LOC_*)을 모든 패널에 주입해 배경 급변(도로→실내 등)을 막는다.
-4. **검증-재생성 루프.** panel-validator가 패널을 6축으로 검사하고 미달분을 기준 만족까지 되돌려 재렌더한다.
+4. **검증-재생성 루프.** panel-validator가 패널을 8축으로 검사하고 미달분을 기준 만족까지 되돌려 재렌더한다.
 
 ## 사전 점검 (회차당 1회)
 
@@ -151,9 +151,35 @@ codex exec --sandbox workspace-write --skip-git-repo-check \
 
 실측 기준 5장 동시 wall-clock ~158초. 사용자에게 렌더가 수십 분 걸림을 미리 알린다.
 
+## 렌더 원장과 무손실 재개 (v11)
+
+모든 배치 실행은 `{OUT_DIR}/.render_logs/_ledger.tsv` **누적 원장**에 기록된다(실행마다 초기화되지 않는다 — 회차 전체의 유일한 렌더 상태 저장소).
+
+- **열**: `ts / backend / backend_version / filename / attempt / prompt_hash / md5 / status / reason`. 배치마다 `# META` 행(백엔드·CLI/모델 버전·동시성·매니페스트·resume 여부)이 먼저 찍힌다 — **백엔드·모델 버전이 바뀌면 결함률 비교의 기준점**이 된다(버전이 다른 두 시행의 결함률을 동일 조건으로 비교하지 말 것).
+- **시도 로그**: `.render_logs/{stem}_try{N}.log` — 재시도 배치가 이전 시도의 로그를 덮어쓰지 않는다(v10 실측 문제 해소).
+- **시도 상한 경고**: 같은 파일의 3회차 시도부터 스크립트가 경고한다 — "패널당 재렌더 3회 상한"(제작 규칙 §7)의 스크립트 레벨 강제. 원장 `attempt` 열로 확인.
+- **기계판독 요약**: `_batch_summary.tsv`(filename/status/reason/md5/attempt).
+- **상태 머신 대응**: 원장 한 행이 한 시도의 `SUBMITTED → GENERATED → ARTIFACT_VERIFIED` 구간을 담당한다(status=OK는 아티팩트 검증까지 통과). 이후 `VALIDATED`(8축)→`APPROVED`(MD5 핀)→`PACKAGED/RELEASED` 는 validation.md·APPROVED-MD5 핀·RELEASE 원장이 담당한다 — "화면에 결과가 보였다"와 "승인 가능한 파일이 저장됐다"는 다른 상태다.
+
+**무손실 재개 — `--resume`**: 사용량 한도·세션 끊김으로 배치가 중단됐을 때 같은 매니페스트를 `--resume`으로 재실행하면, 원장에서 (filename, prompt_hash)의 최근 status가 OK인 패널은 재렌더하지 않고 승계한다(`[SKIP]` 표시). 프롬프트가 바뀐 패널은 해시가 달라 자동으로 재렌더 대상이 된다.
+
+```bash
+.zcode/skills/webtoon-panel-render/scripts/render_batch.sh \
+  --resume --from-file _workspace/04_visual/ep{NN}_manifest.txt \
+  _workspace/05_panels/ep{NN}
+```
+
+주의: resume 스킵은 파일 무결성까지만 승계한다(파일이 삭제됐으면 FAIL로 잡힌다). 내용 품질(8축·V-게이트) 판정에는 영향 없다.
+
 ## 렌더 후 검증 (필수)
 
-생성 직후 항상 파일을 확인한다. codex 세션이 도구 호출에 실패하면 0바이트 PNG가 나올 수 있다.
+생성 직후 항상 파일을 확인한다. **1차는 자동 검사 스크립트** `scripts/lib/panel_check.py`(형식·크기·매트 BL-07 전수, PIL 의존만)로 돌린다 — 디렉토리 모드는 정렬된 PNG 전수 검사 후 요약표를 출력한다. 크기 기대값이 848×1264가 아니면 `PANEL_CHECK_SIZE=WxH`로 지정한다(zai 기본 1056x1568 등). codex 세션이 도구 호출에 실패하면 0바이트 PNG가 나올 수 있다.
+
+```bash
+python3 .zcode/skills/webtoon-panel-render/scripts/lib/panel_check.py _workspace/05_panels/ep{NN}
+```
+
+이어서 최종 확인용 수동 명령:
 
 ```bash
 ls -la _workspace/05_panels/ep{NN}/*.png
@@ -170,11 +196,27 @@ md5 -r _workspace/05_panels/ep{NN}/panel_*.png | awk '{print $1}' | sort | uniq 
 - **누락된 패널 번호** → prompts 목록과 실제 PNG 목록을 대조해 빠진 번호만 렌더한다.
 - 모든 패널이 존재·유효·고유하면 1차 무결성 통과. 이어서 아래 **검증-재생성 루프**(panel-validator)로 내용 품질을 거른 뒤 quality-reviewer에게 넘긴다.
 
+## 사후 검증 4계층 (v11 — V-게이트 계층화)
+
+렌더 완료 후 품질 판정은 4개 계층으로 나뉜다. **어떤 계층도 생략 불가** — 하위 계층 통과가 상위 계층을 대신하지 못한다. 자동 검사는 메인의 시각 판정을 "대체"하는 게 아니라 메인이 중요한 판단에 집중하도록 "돕는" 방향으로만 쓴다.
+
+| 계층 | 수행자 | 검사 | 산출 |
+|-----|--------|------|------|
+| ① 자동 | 스크립트 | `panel_check.py`(형식·크기·매트 BL-07) + 배치 내장 검사(0바이트·손상·md5 중복) | 원장 status |
+| ② 서브에이전트 | panel-validator | 8축(C1~C8) 패널별 결함 스캔 + [PIL]/[RE-RENDER] 수리 라우팅 | validation.md 판정표 |
+| ③ 메인 | V-게이트 | 컨택트시트(2×2, 4컷 그리드) **전수 시각 열람** — 배경 일관성(플레이트 대비)·역할 확인(복장 식별)·상호작용(손-물건-사람)·화면 좌표 일관성 | validation.md V-게이트 섹션 |
+| ④ 불확실 큐 | 메인 | ②③에서 UNCERTAIN 또는 검토자 간 불일치 패널만 재판정(원본 확대 열람) — 무시각 서브에이전트의 OCR/SSIM 오판은 여기서 메인이 뒤집는다 | 최종 판정 |
+
+**판정 스키마 (v11) — VISUAL_PASS / STORY_PASS 2필드 분리**: 패널당 판정은 한 줄이 아니라 두 필드다.
+- `VISUAL_PASS` — 캐릭터·배경·텍스트·스타일·기술 무결성 등 눈에 보이는 품질(8축 판정).
+- `STORY_PASS` — 이 패널이 서사를 전달하는가: 직전 컷과의 인과 연결(K-1), 무대사 독자 테스트(K-3), 말풍선 읽기 순서, 액션의 원인-결과 가시성.
+- 시각적으로 완벽해도 스토리 전달에 실패하면 REGEN/FLAG 대상이고, 그 반대도 성립한다. 둘 중 어느 쪽도 서면으로 못 서면 `UNCERTAIN` — 4계층 큐로 보낸다(자가 확정 금지).
+
 ## 검증-재생성 루프 (panel-validator) — 기준 만족까지 재렌더
 
-무결성(위)만으로는 부족하다. codex는 같은 프롬프트에도 엉뚱한 배경·다른 얼굴·깨진 한글을 낸다. 그래서 렌더 직후 **패널 단위로** 6축을 검사하고 미달분을 되돌려 재렌더한다(생성-검증 패턴). 통과 패널만 조립으로 간다.
+무결성(위)만으로는 부족하다. codex는 같은 프롬프트에도 엉뚱한 배경·다른 얼굴·깨진 한글을 낸다. 그래서 렌더 직후 **패널 단위로** 8축을 검사하고 미달분을 되돌려 재렌더한다(생성-검증 패턴 — 4계층의 ②계층). 통과 패널만 조립으로 간다.
 
-**7축 검사** (각 패널을 Read로 열어 육안 + 스크립트; 상세 결함 목록은 `references/defect-checklist.md` A1~F3 전수 스캔):
+**8축 검사** (각 패널을 Read로 열어 육안 + 스크립트; 상세 결함 목록은 `references/defect-checklist.md` A1~F3·수리 라우팅 태그 [PIL]/[RE-RENDER] 전수 스캔, 결함 클래스 상시 차단절 원장은 `references/blocklist-clauses.md · style-catalog.md(그림체 6종 지정)`):
 1. **C1 캐릭터 일관성** — `refs/{IDTAG}_*.png`와 같은 사람인가(헤어/눈/체형/식별 표식·좌우). 의도된 변형(예: 정산 회색화)은 예외.
 2. **C2 배경/장소 연속성** — 배경이 그 패널의 scene_id/location(LOC_*)과 일치하는가. 같은 씬인데 장소 급변(도로→실내)하면 REGEN.
 3. **C3 말풍선 & 한글 텍스트(최대 리스크)** — 말풍선 종류가 맞고, **한글이 대본과 정확히 일치(오탈자·뭉개짐·영어/가짜 글자 없음)**하며 가독한가. 무대사 패널에 말풍선 있으면 REGEN. **+ (d) 통합 레터링: 말풍선·텍스트가 작화에 녹아든 손그림 잉크 톤인가 — 깨끗한 디지털 폰트를 평평하게 얹은 "오버레이/붙여넣기" 느낌이면 텍스트가 맞아도 REGEN**(후작업 텍스트로 오해됨). 판별 신호(OVERLAY=REGEN): 기계적으로 균일한 획·완벽 균등 자간·시스템 고딕 룩·과하게 매끈한 가장자리·그림과 분리된 검정 톤. **철자와 분리해 별도 판별하며, 텍스트 보유 패널 100% 전수 + 1차 통과 후 교차 비교 스윕**(한 패널만 디지털 폰트로 튀는지). 패널별 INTEGRATED/OVERLAY를 validation.md 레터링 원장에 기록 — 집계 도장(C3 강함 ✓)만으로 통과 금지. 상세 절차는 `panel-validator` 정의의 "C3(d) 통합 레터링" 섹션.
@@ -182,10 +224,11 @@ md5 -r _workspace/05_panels/ep{NN}/panel_*.png | awk '{print $1}' | sort | uniq 
 5. **C5 대사 흐름** — 앞뒤 패널과 이어 읽어 대화가 자연스러운가.
 6. **C6 기술 무결성** — 0바이트/손상/md5 중복 아님, 경로·번호 정확.
 7. **C7 스타일 앵커 일치**(앵커 있을 때) — 선 굵기·채색·셰이딩이 `refs/style_anchor.png`와 같은 화풍인가. 사실화 이탈·질감 과잉은 REGEN. **지시 없는 대사 자체 추가도 여기서 잡는다**(실측 위험).
+8. **C8 교차 패널 스토리 장치 비교** — 같은 장치(벨·유리·플립 쌍 등)를 쓴 컷들을 묶어 비교 — 장치 상태·구도가 서사 의도(같음은 반전에서 단 한 번 등)와 일치하는가.
 
-**루프**: 패널마다 ACCEPT / REGEN(사유+수정 지시). REGEN → prompt-smith가 그 패널 프롬프트만 보강(배경 급변→장소 토큰 강화, 한글 깨짐→텍스트 따옴표·굵게·짧게, 외형 이탈→레퍼런스 앵커·표식 강조, 구도 어긋남→앵글 명시) → 담당 panel-artist가 그 패널만 재렌더 → 재검사. **패널당 최대 3회.** 3회 후에도 미달이면 가장 나은 버전을 **ACCEPT-FLAG**(통과+한계 명시)로 마감하고 `ep{NN}_validation.md`에 기록(무한 루프 방지). C3(한글)이 3회 실패하면 "말풍선 모양 유지 + 가장 정확한 텍스트 버전 채택"으로 마감하고 quality-reviewer에 플래그.
+**루프**: 패널마다 ACCEPT / REGEN(사유+수정 지시). REGEN → prompt-smith가 그 패널 프롬프트만 보강(배경 급변→장소 토큰 강화, 한글 깨짐→텍스트 따옴표·굵게·짧게, 외형 이탈→레퍼런스 앵커·표식 강조, 구도 어긋남→앵글 명시) → 담당 panel-artist가 그 패널만 재렌더 → 재검사. **prompt-smith는 매니페스트 작성·보강 시 `references/blocklist-clauses.md`(상시 차단절 원장)의 적용 조건에 해당하는 모든 컷에 표준 긍정 절을 상시 주입한다(누락 시 렌더 전 검증에서 반려)**, panel-validator가 신규 결함 클래스를 발견하면 같은 원장에 차단 절을 즉시 등재한다(등재 후 다음 매니페스트부터 전 컷 자동 주입 + 진행 중 매니페스트 소급 주입). **패널당 최대 3회.** 3회 후에도 미달이면 가장 나은 버전을 **ACCEPT-FLAG**(통과+한계 명시)로 마감하고 `ep{NN}_validation.md`에 기록(무한 루프 방지). C3(한글)이 3회 실패하면 "말풍선 모양 유지 + 가장 정확한 텍스트 버전 채택"으로 마감하고 quality-reviewer에 플래그.
 
-출력: `_workspace/04_visual/ep{NN}_validation.md`(패널별 판정·6축 결과·재생성 횟수·플래그 목록).
+출력: `_workspace/04_visual/ep{NN}_validation.md`(패널별 판정 **VISUAL_PASS/STORY_PASS 2필드**·8축 결과·재생성 횟수(원장 attempt와 대조)·플래그·UNCERTAIN 큐 목록).
 
 ## 일부만 다시 그리기 (후속 작업)
 
@@ -206,7 +249,7 @@ quality-reviewer가 FIX/REDO로 지정한 패널만 재렌더한다. 전체를 �
 - **md5 중복 미검사** — 동시 배치에서 한 패널이 다른 패널 이미지를 받는 사고를 놓친다(EP01 실제 발생). 크기/헤더만 보지 말 것.
 - **레퍼런스/장소 토큰 누락 렌더** — 외형·배경이 흔들려 재작업 비용 폭증. 레퍼런스 시트 확정 전, 장소 토큰 주입 전에 패널을 렌더하지 않는다.
 - **`no text`로 말풍선 억제** — 이 하네스는 말풍선을 in-image 베이크한다. `no text`를 넣으면 대사가 안 그려진다. 부정은 `no English/gibberish/misspelled text`만.
-- **검증 없이 조립으로 직행** — panel-validator 6축 통과 전 패널은 조립에 넘기지 않는다.
+- **검증 없이 조립으로 직행** — panel-validator 8축 통과 전 패널은 조립에 넘기지 않는다.
 - **C3 집계 도장** — 패널별 레터링 개별 판정 없이 "C3 강함 ✓"로 일괄 통과. EP01에서 이렇게 13장의 오버레이-룩이 새어 나갔다. 텍스트 보유 패널은 전수로 INTEGRATED/OVERLAY를 원장에 남긴다.
 - **레터링 교차 비교 생략** — 패널을 따로따로만 보면 "한 패널만 디지털 폰트로 튀는" 드리프트를 못 잡는다. 1차 통과 후 텍스트 패널을 모아 나란히 비교한다.
 
@@ -250,3 +293,5 @@ WEBTOON_RENDERER=zai bash .zcode/skills/webtoon-panel-render/scripts/render_batc
 
 - `_workspace/05_panels/ep{NN}/panel_001.png` … `panel_0NN.png` (50+장)
 - 렌더 요약(생성/재시도/실패 패널 수)을 최종 보고로 회신한다(오케스트레이터가 episode-compositor에게 중계).
+
+- **그림체 지정(2026-09-19)**: brief `style:` 필드 → 조립 공식 ①번 글로벌 토큰을 `references/style-catalog.md`의 해당 EN 렌더 토큰 블록으로 통째로 치환. 캐릭터 EN·LOC·레터링 블록은 무변경.

@@ -166,6 +166,73 @@ check "zai 키 없음 거부" 2 "ZAI_API_KEY 미설정" "" \
   env -u ZAI_API_KEY HOME="$TM" CONCURRENCY=5 bash "$S/zai_imagegen_batch.sh" \
   "$D/out" "p::a.png"
 
+# ---------- v11: 렌더 누적 원장 ----------
+D="$WORK/t16"; mkdir -p "$D"
+env CONCURRENCY=5 AGY_BIN="$AGY_F" bash "$S/antigravity_imagegen_batch.sh" "$D/out" "alpha::a.png" >/dev/null 2>&1
+env CONCURRENCY=5 AGY_BIN="$AGY_F" bash "$S/antigravity_imagegen_batch.sh" "$D/out" "alpha::a.png" >/dev/null 2>&1
+_ledger="$D/out/.render_logs/_ledger.tsv"
+_metas=$(grep -c '^# META' "$_ledger" 2>/dev/null)
+_arows=$(awk -F'\t' '$4=="a.png"' "$_ledger" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$_metas" = "2" ] && [ "$_arows" = "2" ]; then PASS=$((PASS+1)); echo "PASS  원장 누적(2배치 META·시도 2행)"; else FAIL=$((FAIL+1)); echo "FAIL  원장 누적 — META=$_metas rows=$_arows"; fi
+_att2=$(awk -F'\t' '$4=="a.png" && $5==2' "$_ledger" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$_att2" = "1" ]; then PASS=$((PASS+1)); echo "PASS  시도 카운터(attempt=2 기록)"; else FAIL=$((FAIL+1)); echo "FAIL  시도 카운터 — att2=$_att2"; fi
+if [ -s "$D/out/.render_logs/a_try1.log" ] && [ -s "$D/out/.render_logs/a_try2.log" ]; then PASS=$((PASS+1)); echo "PASS  try 로그 무충돌(try1·try2 공존)"; else FAIL=$((FAIL+1)); echo "FAIL  try 로그 무충돌"; fi
+if grep -q 'backend=antigravity' "$_ledger" && grep -q 'concurrency=5' "$_ledger"; then PASS=$((PASS+1)); echo "PASS  META 행(백엔드·동시성)"; else FAIL=$((FAIL+1)); echo "FAIL  META 행"; fi
+if [ -s "$D/out/.render_logs/_batch_summary.tsv" ] && [ "$(wc -l < "$D/out/.render_logs/_batch_summary.tsv" | tr -d ' ')" -ge 2 ]; then PASS=$((PASS+1)); echo "PASS  배치 요약 TSV"; else FAIL=$((FAIL+1)); echo "FAIL  배치 요약 TSV"; fi
+_out3=$(env CONCURRENCY=5 AGY_BIN="$AGY_F" bash "$S/antigravity_imagegen_batch.sh" "$D/out" "alpha::a.png" 2>&1)
+if printf '%s' "$_out3" | grep -q '시도 3회차'; then PASS=$((PASS+1)); echo "PASS  재렌더 상한 3회 경고"; else FAIL=$((FAIL+1)); echo "FAIL  재렌더 상한 경고"; printf '%s\n' "$_out3" | tail -5 | sed 's/^/      | /'; fi
+
+# ---------- v11: --resume ----------
+D="$WORK/t17"; mkdir -p "$D"
+env CONCURRENCY=5 AGY_BIN="$AGY_F" bash "$S/antigravity_imagegen_batch.sh" "$D/out" "alpha::a.png" >/dev/null 2>&1
+check "resume 동일 프롬프트 스킵" 0 "\[SKIP\] a\.png" "" \
+  env CONCURRENCY=5 AGY_BIN="$AGY_F" bash "$S/antigravity_imagegen_batch.sh" \
+  --resume "$D/out" "alpha::a.png" "beta::b.png"
+_arows=$(awk -F'\t' '$4=="a.png"' "$D/out/.render_logs/_ledger.tsv" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$_arows" = "1" ]; then PASS=$((PASS+1)); echo "PASS  resume 스킵은 원장 행 추가 없음"; else FAIL=$((FAIL+1)); echo "FAIL  resume 원장 — a.png rows=$_arows"; fi
+
+D="$WORK/t18"; mkdir -p "$D"
+env CONCURRENCY=5 AGY_BIN="$AGY_F" bash "$S/antigravity_imagegen_batch.sh" "$D/out" "alpha::a.png" >/dev/null 2>&1
+check "resume 프롬프트 변경 시 재렌더" 0 "유효 1 / 문제 0" "\[SKIP\]" \
+  env CONCURRENCY=5 AGY_BIN="$AGY_F" bash "$S/antigravity_imagegen_batch.sh" \
+  --resume "$D/out" "alpha-changed::a.png"
+_arows=$(awk -F'\t' '$4=="a.png"' "$D/out/.render_logs/_ledger.tsv" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$_arows" = "2" ]; then PASS=$((PASS+1)); echo "PASS  프롬프트 해시 변경 → 시도 2행"; else FAIL=$((FAIL+1)); echo "FAIL  프롬프트 해시 — rows=$_arows"; fi
+
+# ---------- v11: panel_check.py (PIL 있는 경우만) ----------
+if python3 -c "import PIL" >/dev/null 2>&1; then
+  PC="$S/lib/panel_check.py"
+  python3 - "$WORK/matte.png" <<'PYEOF'
+import struct, sys, zlib
+def chunk(t, d):
+    c = t + d
+    return struct.pack(">I", len(d)) + c + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+w, h = 20, 20
+rows = []
+for y in range(h):
+    px = [255, 255, 255] * w if y < 10 else [200, 30, 30] * w
+    rows.append(b"\x00" + bytes(px))
+png = (b"\x89PNG\r\n\x1a\n"
+       + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+       + chunk(b"IDAT", zlib.compress(b"".join(rows)))
+       + chunk(b"IEND", b""))
+open(sys.argv[1], "wb").write(png)
+PYEOF
+  check "panel_check 정상(크기 오버라이드)" 0 "MATTE=none" "" \
+    env PANEL_CHECK_SIZE=8x8 python3 "$PC" "$WORK/fixture.png"
+  check "panel_check 매트 감지" 2 "MATTE=top" "" \
+    python3 "$PC" "$WORK/matte.png"
+  check "panel_check 크기 불일치" 3 "SIZE=8,8" "" \
+    python3 "$PC" "$WORK/fixture.png"
+  mkdir -p "$WORK/dircheck"
+  cp "$WORK/fixture.png" "$WORK/dircheck/ok.png"
+  cp "$WORK/matte.png" "$WORK/dircheck/bad.png"
+  check "panel_check 디렉토리 모드" 1 "문제 1" "" \
+    env PANEL_CHECK_SIZE=8x8 python3 "$PC" "$WORK/dircheck"
+else
+  echo "SKIP  panel_check 시나리오(PIL 미설치)"
+fi
+
 # ---------- 정리·결과 ----------
 cleanup
 echo "----------------------------------------"

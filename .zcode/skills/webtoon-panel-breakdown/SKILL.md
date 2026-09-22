@@ -55,6 +55,7 @@ description: "웹툰 대본을 50+ 패널 샷리스트로 분해하고, 작화 �
 ### panel_007
 - scene_id: S3 / location: LOC_ROOFTOP   # 같은 씬은 같은 장소 — 배경 연속성
 - beat: 3 (대치 시작)
+- characters: [지호(char_001), 군중(배경)]   # entity_id 명기 — 캐논 레지스트리와 연결(continuity §7-30)
 - size: large            # large/medium/small/insert/full-bleed
 - camera: low-angle, medium shot
 - composition: 화면 좌측 1/3 라인의 주인공, 우측 깊은 공간에 적대자(원근 대비)
@@ -67,6 +68,7 @@ description: "웹툰 대본을 50+ 패널 샷리스트로 분해하고, 작화 �
 
 - `size`와 `camera`, `composition`은 §references/composition-grammar.md의 어휘에서 고른다.
 - **`scene_id`/`location`(LOC_*)을 모든 패널에 기재한다.** 같은 scene_id 패널은 같은 장소·시간대·실내외여야 한다(배경 급변 방지). 장소 전환은 SCENE BREAK에서만. LOC_* 토큰은 style-bible의 장소 토큰(B-5)과 일치시킨다.
+- **등장인물이 있는 패널은 `characters:` 행에 entity_id를 명기한다**(v11 — `char_001` 등, 캐릭터 레지스트리/continuity §1.0과 연결). 비트시트→샷리스트→프롬프트→검증 기록 전 구간에서 같은 id가 흐르야 한다 — 회차 간 상태 추적(의상·부상)의 전제(continuity §7-30).
 - `dialogue_ref`는 letterer가 in-image 말풍선 스펙을, prompt-smith가 베이크 프롬프트를 만드는 근거이므로 대사가 있는 패널엔 반드시 기재.
 - 패널 번호는 `panel_001`부터 3자리 연속(계약 §4).
 - 회차 상단에 **장소 목록 표**(scene_id ↔ LOC_* ↔ 한 줄 배경)를 둔다.
