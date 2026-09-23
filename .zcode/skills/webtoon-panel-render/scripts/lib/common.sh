@@ -197,9 +197,7 @@ run_waves() {
         i=$((i + 1))
         continue
       fi
-      base="${f##*/}"
-      stem="${base%.*}"
-      log="$LOG_DIR/${stem}_try${ATTEMPT[$i]}.log"
+      log="$LOG_DIR/$(stem_for "$f")_try${ATTEMPT[$i]}.log"
       render_one "${PROMPTS[$i]}" "$f" "$log" "$((i+1))" &
       WAVE_PIDS+=($!)
       WAVE_IDX+=("$i")
