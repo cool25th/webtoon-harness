@@ -6,6 +6,8 @@
 
 이야기는 `webtoon-series/{스토리}/` 폴더 단위로 저장한다. 하네스(.zcode)는 webtoon-series 루트에서 시리즈 전체를 공유한다.
 
+> **series 워크스페이스의 `.zcode`는 이 저장소를 가리키는 심볼릭 링크다(2026-09-23 전환)** — `webtoon-series/.zcode` → `../webtoon-harness/.zcode`(단일 소스: 사본 드리프트 방지, 서브에이전트 Read·스크립트 실행 실측 통과). 이 레이아웃에서 하네스 수정은 곧 이 저장소의 작업분이 되므로 **세션 종료 전 커밋·푸시로 영구화**한다. 링크가 깨지면 `cd webtoon-series && ln -s ../webtoon-harness/.zcode .zcode`로 복구.
+
 ```
 webtoon-series/            ← 워크스페이스 (여기서 ZCode 실행)
 ├── .zcode/  AGENTS.md     ← 하네스 (시리즈 전체 공유)
@@ -38,6 +40,7 @@ webtoon-series/            ← 워크스페이스 (여기서 ZCode 실행)
 
 ## 변경 이력
 
+- 2026-09-23: **하네스 단일 소스 전환(심볼릭 링크)** — series `.zcode` 사본을 폐지하고 이 저장소 `.zcode`로 연결(사본 드리프트 방지 — 블랙리스트·뷰어 템플릿 드리프트 사례 해소). 동시에 중복·하드코딩 정리: zai 코딩 엔드포인트 URL 상수화(`ZAI_CODING_URL`), save_path/stem 헬퍼 공통화, 죽은 버전 폴백 삭제, 테스트 픽스처 빌더·런처 헬퍼 통합(af45a8e·defdfc1).
 - 2026-09-12: claude-code용 하네스를 ZCode(GLM)용으로 전환. `.claude/` → `.zcode/`, TeamCreate/TaskCreate 팀 운영 → Agent 도구 서브에이전트 디스패치, `model: opus` 제거, codex 배치 스크립트 번들화(기존 `~/.claude/skills/codex-image` 의존 제거).
 - 2026-09-12: 렌더 백엔드 선택 추가 — codex 외에 Z.ai GLM-Image API(`zai_imagegen_batch.sh`) 지원. 진입점은 `render_batch.sh` 디스패처(사용자 지정 > `WEBTOON_RENDERER` > auto). 한 회차는 한 백엔드로 끝까지 렌더.
 - 2026-09-12: **antigravity 백엔드 추가**(권장) — Antigravity CLI(agy) 헤드리스로 Google 구독 쿼터만으로 렌더(별도 키·과금 불필요). `antigravity_imagegen_batch.sh` 신설, auto 우선순위 agy → codex → zai. 실측: 2패널 한글 말풍선 렌더 성공(1장 대사 완벽, 1장 자모 1개 오차 → REGEN 루프 권장).
