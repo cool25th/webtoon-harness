@@ -11,9 +11,15 @@
 #   antigravity  Google Antigravity CLI(agy) — 기본. 공식 스크립트로 설치 + Google 브라우저 로그인
 #   codex        codex CLI — npm 설치 + ChatGPT 브라우저 로그인
 #   zai          Z.ai API 키 — 키 입력 → 실호출 검증 → ~/.zai_api_key(600) + 셸 프로필 등록
+#
+# Env:
+#   ZAI_CODING_URL  키 검증용 코딩 엔드포인트 (기본 https://api.z.ai/api/coding/paas/v4/chat/completions)
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# z.ai 엔드포인트 상수 — 렌더 스크립트의 ZAI_API_BASE(이미지)와 함께 이 파일들의 유일한 소스.
+ZAI_CODING_URL="${ZAI_CODING_URL:-https://api.z.ai/api/coding/paas/v4/chat/completions}"
 
 # ---------- 공통 헬퍼 ----------
 line() { printf '%s\n' "----------------------------------------------------------------"; }
@@ -100,7 +106,7 @@ setup_zai() {
   [ -n "$key" ] || { echo "키가 비었다"; return 1; }
   echo "키 검증 중 (코딩 엔드포인트에 5토큰 테스트 호출)..."
   local code
-  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST https://api.z.ai/api/coding/paas/v4/chat/completions \
+  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$ZAI_CODING_URL" \
     -H "Authorization: Bearer $key" -H "Content-Type: application/json" \
     -d '{"model":"glm-5.2","messages":[{"role":"user","content":"ok"}],"max_tokens":5}')
   if [ "$code" != "200" ]; then

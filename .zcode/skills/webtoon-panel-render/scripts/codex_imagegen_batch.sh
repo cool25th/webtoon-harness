@@ -48,16 +48,11 @@ render_fail_reason() { # $1=idx — 실패 사유에 종료 코드를 포함
 
 # 항목 1개 렌더: codex exec 세션 1회(성공 시 0). 저장 경로·보고 형식은 지시문에 포함.
 render_one() { # $1=prompt $2=file $3=log $4=idx
-  local prompt file log idx prompt_esc md instruction stem
+  local prompt file log idx prompt_esc md instruction save_path
   prompt="$1" file="$2" log="$3" idx="$4"
   prompt_esc="$(sq_escape "$prompt")"
-  stem="${file##*/}"; stem="${stem%.*}"
-  md="$LOG_DIR/${stem}_last.md"
-  if [ "${OUT_DIR#/}" != "$OUT_DIR" ]; then
-    save_path="${OUT_DIR}/${file}"
-  else
-    save_path="./${OUT_DIR}/${file}"
-  fi
+  md="$LOG_DIR/$(stem_for "$file")_last.md"
+  save_path="$(save_path_for "$file")"
   instruction="이미지 생성 도구로 '${prompt_esc}' 이미지를 생성하고 ${save_path} 로 저장한다. 성공 시 저장한 파일 경로만 한 줄로 보고."
   (
     cd "$ROOT" || exit 1
@@ -69,8 +64,7 @@ render_one() { # $1=prompt $2=file $3=log $4=idx
 parse_items "$@"
 
 command -v "$CODEX_BIN" >/dev/null 2>&1 || { echo "codex CLI 없음: $CODEX_BIN" >&2; exit 2; }
-BACKEND_VERSION="$("$CODEX_BIN" --version 2>/dev/null | head -n1)"
-: "${BACKEND_VERSION:=unknown}"
+BACKEND_VERSION="$("$CODEX_BIN" --version 2>/dev/null | head -n1)" # unknown 폴백은 common.sh init_ledger가 처리
 init_ledger
 
 echo "=== codex_imagegen_batch: 총 $TOTAL 항목, 동시 $CONCURRENCY, 타임아웃 ${RENDER_TIMEOUT_SECS}s ==="

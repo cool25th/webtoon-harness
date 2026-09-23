@@ -12,7 +12,17 @@
    3) bubbles[].x/y 는 패널 좌상단 기준 백분율(0~100), w 는 말풍선 폭(%).
       type: dialogue | thought | shout | narration
       tail: none | left | right | up | down  (말풍선 꼬리가 가리키는 방향 = 화자 방향)
-   4) 브라우저로 그대로 열어 검수한다.
+   4) <body data-style="...">로 전역 그림체 스타일 키를 지정하면 해당 스타일의
+      뷰어 모션이 전체 패널에 적용된다. 패널별 motion 필드로 컷 단위 오버라이드:
+        - 생략/"auto"  → 전역 data-style 따름
+        - 스타일 키     → 해당 모션 강제 (아래 6종)
+        - "none"       → 모션 없음 고정 (플립 쌍·동일 구도 보호 등)
+      스타일 키: webtoon-clean | watercolor-soft | retro-manga |
+                 sketch-pencil | noir-neon | pastel-warm
+   5) 모션 공통 원칙: 프레임당 1종 · transform/opacity 중심(스타일 요구시에만 최소
+      filter) · prefers-reduced-motion 존중(전부 정지) · IntersectionObserver로
+      화면에 들어온 패널만 재생(.live) · JS 애니메이션 라이브러리 금지.
+   6) 브라우저로 그대로 열어 검수한다.
 -->
 <style>
   :root {
@@ -45,7 +55,8 @@
     display: flex; flex-direction: column;
     gap: var(--panel-gap);
   }
-  .panel { position: relative; line-height: 0; }
+  /* overflow:hidden — 모션 스케일/드리프트가 패널 밖으로 새지 않게 (베이크 말풍선 보존) */
+  .panel { position: relative; line-height: 0; overflow: hidden; }
   .panel img {
     width: 100%; height: auto; display: block;
     background: #e9e9ee; /* 이미지 결손 시에도 칸 형태 유지 */
@@ -101,9 +112,109 @@
     color:#9a9aa2; text-align:center; padding:28px 12px 60px;
     font-size:13px; max-width: var(--max-w); margin:0 auto;
   }
+
+  /* ============================================================
+     모션 시스템 — 스타일별 뷰어 모션 (data-m = 유효 모션 키)
+     발동 조건: .panel.live (IntersectionObserver로 화면 내 패널만)
+     공통: 베이스 scale ≥ 1.006 → 가장자리 빈틈 방지
+     --i(패널 인덱스)로 음수 딜레이 → 패널끼리 위상 어긋나게(기계적 동조 방지)
+     ============================================================ */
+
+  /* 1) webtoon-clean — 미세 Ken Burns: 1.02배 초슬로우 줌, 숨쉬듯 (절제) */
+  .panel[data-m="webtoon-clean"].live img {
+    animation: m-clean 16s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -2.3s);
+  }
+  @keyframes m-clean {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1); }
+  }
+
+  /* 2) watercolor-soft — 부드러운 드리프트 + 살짝 블러 펄스 (수채 번짐 감각) */
+  .panel[data-m="watercolor-soft"].live img {
+    animation: m-water 19s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -3.1s);
+  }
+  @keyframes m-water {
+    0%, 100% { transform: translate(0,0) scale(1.012); filter: blur(0px); }
+    25%      { transform: translate(.3%, -.25%) scale(1.016) rotate(.12deg); filter: blur(.35px); }
+    50%      { transform: translate(-.28%, .28%) scale(1.012) rotate(0deg); filter: blur(.1px); }
+    75%      { transform: translate(.22%, .24%) scale(1.018) rotate(-.1deg); filter: blur(.4px); }
+  }
+
+  /* 3) retro-manga — 슬랫(가로선) 슬라이드 등장 전환 + 톤 깜빡임
+       전환은 오버레이(.fx-slats), 연속 모션은 이미지 — 요소당 애니메이션 1종 */
+  .fx-slats {
+    position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    background: repeating-linear-gradient(to bottom,
+      rgba(8,8,10,.95) 0 9px, transparent 9px 24px);
+  }
+  .panel[data-m="retro-manga"].live .fx-slats {
+    animation: m-slat-wipe .85s steps(8) forwards;
+    animation-delay: 0s; /* 등장 전환은 위상 어긋냄 없이 진입 즉시 */
+  }
+  @keyframes m-slat-wipe {
+    0%   { transform: translateX(0); opacity: 1; }
+    100% { transform: translateX(-103%); opacity: 0; }
+  }
+  .panel[data-m="retro-manga"].live img {
+    animation: m-tone 7s steps(1) infinite; /* steps(1) — 키 프레임마다 홀드·점프 = 인쇄 톤 깜빡임 */
+    animation-delay: calc(var(--i, 0) * -1.9s);
+  }
+  @keyframes m-tone {
+    0%, 100% { transform: scale(1.015); filter: contrast(1) brightness(1); }
+    7%       { transform: scale(1.015); filter: contrast(1.06) brightness(.96); }
+    13%      { transform: scale(1.015); filter: contrast(.98) brightness(1.015); }
+    21%      { transform: scale(1.015); filter: contrast(1.04) brightness(.975); }
+    34%      { transform: scale(1.015); filter: contrast(1) brightness(1); }
+    55%      { transform: scale(1.015); filter: contrast(1.05) brightness(.985); }
+    68%      { transform: scale(1.015); filter: contrast(.99) brightness(1.01); }
+    82%      { transform: scale(1.015); filter: contrast(1.03) brightness(.99); }
+  }
+
+  /* 4) sketch-pencil — 라인 보일: 2프레임 지터 왕복 (살아있는 스케치) */
+  .panel[data-m="sketch-pencil"].live img {
+    animation: m-boil .26s steps(1) infinite;
+  }
+  @keyframes m-boil {
+    0%, 100% { transform: translate(.4px, .2px) rotate(.06deg) scale(1.008); }
+    50%      { transform: translate(-.45px, -.28px) rotate(-.05deg) scale(1.008); }
+  }
+
+  /* 5) noir-neon — 네온 글로우 펄스 + 절제된 대비 플리커 */
+  .panel[data-m="noir-neon"].live img {
+    animation: m-neon 8.5s linear infinite;
+    animation-delay: calc(var(--i, 0) * -2.7s);
+  }
+  @keyframes m-neon {
+    0%, 100% { transform: scale(1.012); filter: brightness(1) saturate(1.06) contrast(1); }
+    38%      { transform: scale(1.017); filter: brightness(1.045) saturate(1.16) contrast(1.03); }
+    41%      { transform: scale(1.017); filter: brightness(.98) saturate(1.1) contrast(1.07); }
+    44%      { transform: scale(1.019); filter: brightness(1.03) saturate(1.2) contrast(1.02); }
+    47%      { transform: scale(1.018); filter: brightness(1.005) saturate(1.12) contrast(1.05); }
+    50%      { transform: scale(1.02); filter: brightness(1.05) saturate(1.22) contrast(1.04); }
+    86%      { transform: scale(1.014); filter: brightness(1.015) saturate(1.08) contrast(1.01); }
+  }
+
+  /* 6) pastel-warm — 파동치는 스케일 + 따뜻한(sepia) 페이드 */
+  .panel[data-m="pastel-warm"].live img {
+    animation: m-pastel 12s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -1.9s);
+  }
+  @keyframes m-pastel {
+    0%, 100% { transform: scale(1.012) rotate(-.14deg); filter: sepia(0) brightness(1); }
+    50%      { transform: scale(1.034) rotate(.14deg); filter: sepia(.08) brightness(1.025); }
+  }
+
+  /* 모션 존중 — 사용자 시스템 설정 reduce: 전부 정지(슬랫 오버레이도 제거) */
+  @media (prefers-reduced-motion: reduce) {
+    .panel img, .fx-slats { animation: none !important; }
+    .fx-slats { display: none; }
+  }
 </style>
 </head>
-<body>
+<!-- data-style = 전역 스타일 키(예시: webtoon-clean). 없으면 모션 없음. -->
+<body data-style="webtoon-clean">
 <header class="viewer-head"><b id="m-title">웹툰 제목</b> · <span id="m-ep">ep{NN}</span></header>
 <main class="strip" id="strip" aria-label="webtoon vertical viewer"></main>
 <footer class="viewer-foot" id="foot"></footer>
@@ -113,7 +224,8 @@
 const META = { title: "웹툰 제목", episode: "ep{NN}" };
 
 /* ===== PANELS 데이터 (episode-compositor가 채운다) =====
-   src 는 이 파일 기준 상대경로. bubbles 는 없으면 [] 또는 생략. */
+   src 는 이 파일 기준 상대경로. bubbles 는 없으면 [] 또는 생략.
+   motion: 생략/"auto"=전역 data-style 따름 | 스타일 키 6종 | "none"=고정. */
 const PANELS = [
   {
     src: "../../05_panels/ep{NN}/panel_001.png",
@@ -126,12 +238,27 @@ const PANELS = [
   {
     src: "../../05_panels/ep{NN}/panel_002.png",
     alt: "panel 002",
+    motion: "none",   /* 예: 플립/동일 구도 보호 컷은 모션 고정 */
     bubbles: [
       { type: "thought", text: "이건 생각...", x: 68, y: 30, w: 40 },
       { type: "shout", text: "외침!!", x: 50, y: 80, w: 36, tail: "left" }
     ]
   }
 ];
+
+/* ===== 모션 시스템 =====
+   전역: <body data-style="스타일키">. 컷별: PANELS[].motion 오버라이드.
+   유효 키만 data-m 으로 심고, 없으면 모션 없음. */
+const MOTION_KEYS = [
+  "webtoon-clean", "watercolor-soft", "retro-manga",
+  "sketch-pencil", "noir-neon", "pastel-warm"
+];
+const GLOBAL_STYLE = (document.body.dataset.style || "").trim();
+
+function resolveMotion(p) {
+  const m = (p.motion && p.motion !== "auto") ? p.motion : GLOBAL_STYLE;
+  return MOTION_KEYS.indexOf(m) !== -1 ? m : "none";
+}
 
 /* ===== 렌더러 ===== */
 function el(tag, cls, txt){ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
@@ -148,6 +275,9 @@ function renderBubble(b){
 
 function renderPanel(p, i){
   const panel = el("div", "panel");
+  const m = resolveMotion(p);
+  if (m !== "none") panel.dataset.m = m;          /* CSS 모션 훅 */
+  panel.style.setProperty("--i", String(i));      /* 위상 어긋냄(음수 딜레이)용 인덱스 */
   const img = new Image();
   img.loading = "lazy";              // 긴 회차 성능을 위한 지연 로드
   img.decoding = "async";
@@ -158,6 +288,7 @@ function renderPanel(p, i){
     img.replaceWith(ph);
   };
   panel.appendChild(img);
+  if (m === "retro-manga") panel.appendChild(el("div", "fx-slats")); /* 슬랫 전환 오버레이(말풍선 z-index 아래) */
   (p.bubbles||[]).forEach(b => panel.appendChild(renderBubble(b)));
   return panel;
 }
@@ -170,6 +301,18 @@ function renderPanel(p, i){
   PANELS.forEach((p,i) => strip.appendChild(renderPanel(p,i)));
   document.getElementById("foot").textContent =
     "총 " + PANELS.length + " 패널 · 끝까지 스크롤하세요";
+
+  /* 화면에 들어온 패널만 모션 재생(.live 토글) — 50+ 패널 회차 부담 방지.
+     reduce 설정은 CSS가 이미 정지 처리 — 여기서는 클래스만 관리. */
+  const panels = Array.prototype.slice.call(strip.children);
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ en.target.classList.toggle("live", en.isIntersecting); });
+    }, { rootMargin: "12% 0px", threshold: 0.01 });
+    panels.forEach(function(n){ io.observe(n); });
+  } else {
+    panels.forEach(function(n){ n.classList.add("live"); });
+  }
 })();
 </script>
 </body>

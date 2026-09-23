@@ -236,6 +236,20 @@ render_fail_reason() { # $1=idx → stdout에 사유 문구
   printf '%s' "$REASON_RENDER_FAIL"
 }
 
+# 파일명 stem — 로그/메타 이름 규격({stem}_try{N}.log·{stem}_last.md와 동일 규칙)
+stem_for() { # $1=file (PROMPTS/FILES 항목) → stdout
+  local base="${1##*/}"
+  printf '%s' "${base%.*}"
+}
+
+# 저장 지시용 경로 — OUT_DIR 절대면 그대로, 상대면 ROOT 기준 절대화(백엔드 지시문 삽입용)
+save_path_for() { # $1=file → stdout
+  case "$OUT_DIR" in
+    /*) printf '%s/%s' "$OUT_DIR" "$1" ;;
+    *)  printf '%s/%s/%s' "$ROOT" "$OUT_DIR" "$1" ;;
+  esac
+}
+
 # 0바이트/손상(포맷)/md5 중복 검사 + 누적 원장·배치 요약 기록.
 # 결과: ITEM_STATUS[i]/ITEM_REASON[i]/MD5S[i], 파생 FAIL_NAMES/FAIL_REASONS/OK_NAMES/SKIP_NAMES/DUP_GROUPS.
 integrity_check() {

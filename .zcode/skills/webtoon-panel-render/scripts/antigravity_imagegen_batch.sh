@@ -55,8 +55,8 @@ init_md5
 init_timeout
 
 # 원장 메타데이터용 버전 프로브 — 모델/CLI 변경 시 결함률 비교의 기준점.
+# (unknown 폴백은 common.sh init_ledger가 처리)
 BACKEND_VERSION="$("$AGY_BIN" --version 2>/dev/null | head -n1)"
-: "${BACKEND_VERSION:=unknown}"
 
 parse_items "$@"
 init_ledger
@@ -97,12 +97,9 @@ fi
 
 render_one() { # $1=prompt $2=file $3=log ($4=idx는 공통 호출 규약용, 미사용)
   local prompt="$1" file="$2" log="$3"
-  # OUT_DIR가 절대경로면 "./"를 붙이지 않는다(cd 후 상대 해석으로 다른 위치에 저장되는 사고 방지)
-  if [ "${OUT_DIR#/}" != "$OUT_DIR" ]; then
-    local save_path="${OUT_DIR}/${file}"
-  else
-    local save_path="./${OUT_DIR}/${file}"
-  fi
+  # 저장 지시용 경로(OUT_DIR 절대/상대 판별)는 common.sh save_path_for가 처리
+  local save_path
+  save_path="$(save_path_for "$file")"
   {
     echo "--- agy 렌더 시작: $(date '+%H:%M:%S') ---"
     cd "$ROOT" || exit 1

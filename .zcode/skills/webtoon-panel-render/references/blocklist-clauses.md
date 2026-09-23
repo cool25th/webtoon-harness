@@ -101,11 +101,13 @@
 - **표준 긍정 절(EN, 단일 문장)**: "the background is recomposed from this panel's own camera axis — the counter edge, shelf lines and door position shift with the viewpoint so the fixture layout never repeats a previous panel's framing"
 - **변형(실측 이행형)**: (유리/문 축 컷용) "the glass door sits at a NEW frame position and scale in this panel — never centered the same way twice"
 - **변형2(v8 신규 — 동일 계열 연속 컷 앵커 격리, 2026-09-20 등재)**: 직전/근접 승인본 앵커가 같은 계열(동일 LOC의 WIDE/MED)이면 **앵커에서 해당 승인본을 제외**하고 "completely different camera axis from panel_XXX: NOT the [직전 컷 구도 요약] view, NOT a repeat of any prior framing"의 **구체 축 부정형**으로 교체 — [1,3]·[17,18] 실측에서 '앵커 + NOT-a-repeat 일반 문구' 병용이 프레이밍 복제를 막지 못했음(앵커 이미지가 우세 지시로 작동)
-- **적용 조건**: 동일 LOC 토큰을 공유하는 연속·근접(≤10컷) WIDE/MED 컷 및 유리/문 축 포함 컷 전부 — 특히 그룹 내 2번째 이상 등장하는 실내 와이드. 기존 `NOT a repeat of any prior framing` 절은 문장형 반복 금지라 템플릿 수렴 방지에 불충분(실측) — 본 절을 좌표형(배치가 시점을 따른다)으로 병용 주입
+- 변형3(2026-09-23 등재 — 3플레이트 제약 시리즈 동일축 동일샷타입 쌍, 그_자리는_비워_둬 ep01 그룹 C 실측 기반): 카메라 포지션이 플레이트 3종으로 제한된 시리즈에서 **같은 플레이트 + 같은 샷타입(M 등) 조합의 2번째 이상 컷**은 표준 절 + 앵커 격리만으로 프레이밍 수렴을 못 막음(실측: [29,33] zcorr 0.897·diff 5.25%·IoU 0.810·인물 x-피크 454px 완전 동일 — 두 컷 모두 recomposition guard + plate-only anchor 주입 상태에서 수렴). 이 조합에는 **주체 위치 이동 강제**를 추가한다: "the figure stands at a clearly different frame position and scale than in any previous panel on this plate — shifted horizontally AND in depth, with a different head-height reference line"
+- **적용 조건**: 동일 LOC 토큰을 공유하는 연속·근접(≤10컷) WIDE/MED 컷 및 유리/문 축 포함 컷 전부 — 특히 그룹 내 2번째 이상 등장하는 실내 와이드. 기존 `NOT a repeat of any prior framing` 절은 문장형 반복 금지라 템플릿 수렴 방지에 불충분(실측) — 본 절을 좌표형(배치가 시점을 따른다)으로 병용 주입. **변형3은 3플레이트 제약 시리즈의 동일 플레이트+동일 샷타입 2회차 이상 컷에 추가 주입**
 - **라우팅 비고**: 렌더 후 zcorr 80+ 잔류쌍은 변별 지표(픽셀 diff·에지 IoU·SSIM)로 진성 중복 여부 재판정 — 진성이면 [RE-RENDER](구도 완전 재지시), 템플릿 기인이면 FLAG+조립 리듬 관찰. 재발주는 지표가 아니라 "구도 완전 재지시" 문구로만 유효(022 실측: 같은 프롬프트 재시도는 지표 불응)
 
 ## 변경 이력
 
+- 2026-09-23 교실 시리즈 실측 등재: BL-07·BL-08 이력 갱신(변형2/스펙 문구 주입 상태 발생) + **BL-17 신규(문장부호 완전 베이크)** — 그_자리는_비워_둬 ep01 그룹 B 라운드1 (panel-validator)
 - 2026-09-18 최초 수록: BL-01~BL-08 (8클래스, ep01_validation.md 실측 기반 — 오케스트레이터 워크플로우 점검 권고 1 파이프라인화)
 - 2026-09-19 BL-07 실측 이력 갱신: ep01 v6 그룹 A panel_015 백색 매트 이중 테두리 — 클래스 첫 실측 발생 (panel-validator, PIL 프레임 포렌식 확정 — 8컷 이상 전폭 균일 밴드 검출로 판정)
 - 2026-09-19 BL-07 v7 재발 이력 + 변형2(풀블리드 무매트 문구) 등재: ep01 v7 그룹 A 6컷(005·006·008·011·014·015) 순백 매트 재발 (panel-validator 라운드1 — std<4 평탄밴드·내측 흑선·앵커 0px 대조 판정)
@@ -166,3 +168,67 @@
 기존 항목 + **화면 좌표 일관성(문·유리=화면 좌 / 계산대=화면 우 — 전 컷)** + **SFX 원인 가시성(벨 장치·음선·열리는 문 동반)**
 
 - **BL-11 강화(2026-09-20 v8.3)**: `no hands or arms entering from off-frame — if any hand appears, its arm and shoulder must be visibly connected to the person's body within the same panel` (사용자 실측: 혼자 있는데 갑자기 손)
+
+## 교실 시리즈 변형 (2026-09-22 등재 — 《그 자리는 비워 둬》 신규 시리즈·SDIR 그_자리는_비워_둬)
+
+신규 무대(LOC_CLASSROOM) 적용 변형 — 본 절 등재문구만 해당 시리즈 매니페스트에 주입한다(원 문구와 병행 아님).
+
+### BL-02-CLS 교실 벽면·칠판 (BL-02 교실 변형)
+- **표준 긍정 절(EN)**: "the classroom walls are completely bare flat surfaces — no wall clock, no bulletin board, no posters, no framed pictures, no schedules, no displays, nothing mounted; the blackboard is a completely clean empty dark-green surface with no writing, no chalk marks, no numbers, no dates, no diagrams"
+- **적용 조건**: 교실 벽면 또는 칠판이 프레임에 조금이라도 들어오는 모든 컷(PLATE_A·B 포함)
+- 라우팅: [PIL] 1차(평면 결함)
+
+### BL-01-CLS 책상 표면 (BL-01 교실 변형)
+- **표준 긍정 절(EN)**: "every student desktop is a completely bare flat wooden surface — no stationery, no pens, no pencil cases, no books, no notebooks, no papers, no small objects of any kind"
+- **적용 조건**: 책상 표면이 가시적인 모든 컷 — 단 스크립트가 명시하는 소품(사각사각 청소 컷 등)이 있으면 해당 소품만 예외로 명시
+- 라우팅: [PIL] 1차
+
+### BL-05-CLS 교실 시간 오브젝트 (BL-05 교실 변형)
+- **표준 긍정 절(EN)**: "no clocks, no watches, no digital displays, no digits anywhere in the classroom — the sky seen through the windows is the only clock"
+- **적용 조건**: 교실 내부 전 컷
+
+### BL-10-CLS 교실 3축 고정 (BL-10 v2 교실 변형 — S-1 플레이트와 결합)
+- **PLATE_A 축**: "camera at the front of the classroom looking toward the back: the blackboard and teacher's desk on the viewer's lower LEFT, the back door on the viewer's RIGHT, seat rows in perspective between them; never mirrored, never reversed"
+- **PLATE_B 축**: "camera at the back of the classroom looking toward the front: the blackboard at the vanishing point center, the window wall on the viewer's RIGHT, seat backs in the foreground; never mirrored, never reversed"
+- **PLATE_C 축**: "camera along the window wall side: the windows and curtains on the viewer's LEFT, the seat-row profile on the viewer's RIGHT, seat 23 in the second row from the window; never mirrored, never reversed"
+- **적용 조건**: 교실 내부 전 컷 — 해당 카메라 포지션의 플레이트 절대경로 참조와 세트로 주입
+- 라우팅: [RE-RENDER] Tier S (즉시)
+
+### BL-13-CLS 교실 신체-가구 계약 (BL-13 교실 변형)
+- **표준 긍정 절(EN)**: "every person sits fully on a chair with their body outside and above the desk — no body parts intersecting or fused with desks or chairs; hands rest on the desktop or lap only"
+- **적용 조건**: 착석 인물이 있는 모든 컷(S-23 정좌 컷 포함)
+- 라우팅: [RE-RENDER]
+
+### BL-16-CLS 창문 반사·창밖 인물형 (신규 — BL-03 계열 교실 변형)
+- **표준 긍정 절(EN)**: "the window glass shows only the sky and faint vertical light streaks — no person, no figure, no silhouette reflected in or standing outside the windows"
+- **적용 조건**: 창문이 프레임에 들어오는 모든 컷(단, 반전 이후 컷에서 스크립트가 명시한 창밖 요소만 예외)
+- 라우팅: [RE-RENDER] 반사가 주체일 때 / [PIL] 국소
+
+## 교실 시리즈 실측 이력 (2026-09-23 등재 — 《그 자리는 비워 둬》 ep01 그룹 B 라운드1, panel-validator)
+
+- **BL-07 이력 갱신**: panel_013 상단 69px·하단 59px 순백 매트(내측 흑선 없음) — **변형2 풀블리드 문구가 매니페스트에 주입된 상태에서도 발생**. 프롬프트 문구만으로 매트가 완전 예방되지 않음이 이 시리즈에서도 확인 → 렌더 후 panel_check.py MATTE 전수 검사·validator 독립 재측정 게이트 유지 필수.
+- **BL-08 이력 갱신**: panel_020 SFX 「사각사각」 잉크 폭 380px=**44.8%W**(연결요소 라벨링·역치 3종 강건) — "spans about one fifth / 18-22% of panel width" 문구 주입 상태에서 약 2.2배 발생. [PIL] 축소 재배치 1차 라우팅. panel_025 「덜컥」 17.7%W는 하한 -0.3pp 경계(FLAG).
+- **BL-17 신규 등재 — 문장부호 완전 베이크(말미 마침표 누락 클래스)**
+  - **결함 코드**: BL-17 — C3 텍스트 정확 하위 · 수리 라우팅 **[RE-RENDER]**(텍스트 베이크 결함은 편집 불가)
+  - **실측 이력**: 그_자리는_비워_둬 ep01 1판 1컷 — panel_015 풍선 2행 「저 자리를, 안 보네」에서 말미 '.' 미베이크(픽셀 근거: 마지막 글리프 x599 종료 후 마침표 위치에 점 블롬 부재 — 풍선 윤곽 호만 존재. 타 13개 풍선의 마침표는 전부 판독 → 인식기 맹점 아닌 실물 누락)
+  - **표준 긍정 절(EN, 단일 문장)**: "every quoted dialogue line is baked complete to its final character including the exact trailing punctuation mark — every ellipsis, comma and period of the quoted text appears in the artwork exactly as written, nothing dropped at line ends"
+  - **적용 조건**: 대사 컷 전부(특히 2행 분할 풍선 — 행 끝에 오는 '.', '?', '…' 전수)
+  - **라우팅 비고**: 검증은 OCR 판독 + 말미부 픽셀 스캔(점 블롬 탐지) 병행 — 본 클래스는 문자 본체는 맞고 부호만 누락되는 경우를 잡는다
+- **운용 통지**: 위 3건 발화로 **그룹 C(026~034)·모든 재발주 매니페스트는 발행 전 본 원장 대조 소급 점검 의무**(운용 규칙 3 — BL-07·BL-08은 기주입이므로 게이트 강화, BL-17은 전 대사 컷 신규 주입).
+
+## 교실 시리즈 실측 이력 갱신 (2026-09-23 — 《그 자리는 비워 둬》 ep01 그룹 C 라운드1, panel-validator)
+
+- **BL-09 이력 갱신 + 변형3 등재**: panel_033이 panel_029(PLATE_C M·통로 측면) 프레이밍 재생산 — zcorr 0.897·pixdiff 5.25%·에지IoU 0.810(진성 3역치 전부 충족)·인물 어두운 열 프로파일 피크 x=454px 완전 동일. 두 컷 모두 recomposition guard + plate-only anchor 주입 상태였음 → **3플레이트 제약 시리즈의 동일 플레이트+동일 샷타입 쌍에는 주체 위치 이동 강제(변형3)가 필요** — 위 BL-09 변형3 등재. 재발주는 "구도 완전 재지시"(23번 의자 프레임 내 가독 + 인물 x-위치/스케일 변경)로만 유효.
+- **참고(결함 아님 — 플립 쌍 성공 사례 기록)**: 030↔031 플립은 zcorr 0.956·멀리언 6·책상 에지 6 전부 0px 일치·전역 시프트 0·델타 3.08% 단일 인물 블롭(존재 1비트) — "플립 쌍 분리 금지 + 030 앵커 유일 예외" 운용이 의도대로 작동했음을 측정으로 확정. 후속 회차 플립 쌍 설계의 기준값으로 사용 가능.
+
+## 공정 결함 (렌더 외 — 2026-09-23 등재)
+
+### PR-01 비전 모델 환각 좌표로 PIL 수리 금지 (ep01《그 자리는 비워 둬》실측)
+- **사고**: panel_020 SFX 폭 수리에서 비전 모델(analyze_image)이 제시한 SFX bbox(좌상단)가 환각이었음 — 실제 SFX는 y910-1087(하단 손 군집 상부). PIL 수리가 원본 유기 콘텐츠를 삭제·합성 인공물(직선 스트로크) 추가. 사후 자체 측정(붙여넣기 영역 스팬)은 자기 확인 루프로 무의미.
+- **규칙**: ① **PIL 수리 대상 좌표는 반드시 무시각 포렌식 측정값(validator OCR/라벨링)으로 확정**한다 — 비전 모델이 읽어준 좌표는 수리 발주 근거로 쓸 수 없다. ② PIL 수리 후 검증은 **수리 전 대비 diff 풋프린트가 대상 결함 존에 있는지** 비트레벨 확인 후에만 완료로 인정한다. ③ 반해상도 컨택트시트/크롵 판독의 텍스트 위치 신고도 원해상도 재확인 전에 수리에 쓰지 않는다(006 오판정 교훈과 동일 구조).
+- **라우팅 비고**: PIL 1차 실패·대상 좌표 불확실 시 [RE-RENDER]로 즉시 전환(상한 내).
+
+### PR-02 재시도본 매 시도 보존 + BL-08 양방화 (ep01 실측 — 2026-09-23 등재)
+- **사고**: panel_020 2회차본(05d15111, 스팬 24.3~25.2%W)이 3회차 렌더 직전 미보존으로 소실 — 최선본 판정 테이블에서 "채택 불가(프로세스 기록)"로 마감. 3회차가 과축소(15.3%W)되며 되돌릴 수 없었음.
+- **규칙**: ① **REGEN 재렌더 직전 현재본을 `.render_logs/panel_NNN_attemptK.png`로 복사 보존**한다(매 시도 의무 — "나중에 고르기"가 아니라 "매번 남기기"). ② BL-08 스팬 문구는 양방향으로 쓴다: 표준 긍정 절 개정 — "the sound-effect lettering block spans 18 to 22 percent of the panel width measured edge-to-edge including letter spacing — neither wider nor smaller" (단방 "no wider"가 과축소를 유도한 실측: 44.8 → 33.5 → 24.3 → 15.3%W 진자).
+- **비고**: 크기 스펙 프롬프트는 목표 밴드 중앙값보다 약간 높게 제시하는 것이 수렴에 유리(진자 감쇠 없이 2회 내 착지).
