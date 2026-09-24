@@ -232,3 +232,102 @@
 - **사고**: panel_020 2회차본(05d15111, 스팬 24.3~25.2%W)이 3회차 렌더 직전 미보존으로 소실 — 최선본 판정 테이블에서 "채택 불가(프로세스 기록)"로 마감. 3회차가 과축소(15.3%W)되며 되돌릴 수 없었음.
 - **규칙**: ① **REGEN 재렌더 직전 현재본을 `.render_logs/panel_NNN_attemptK.png`로 복사 보존**한다(매 시도 의무 — "나중에 고르기"가 아니라 "매번 남기기"). ② BL-08 스팬 문구는 양방향으로 쓴다: 표준 긍정 절 개정 — "the sound-effect lettering block spans 18 to 22 percent of the panel width measured edge-to-edge including letter spacing — neither wider nor smaller" (단방 "no wider"가 과축소를 유도한 실측: 44.8 → 33.5 → 24.3 → 15.3%W 진자).
 - **비고**: 크기 스펙 프롬프트는 목표 밴드 중앙값보다 약간 높게 제시하는 것이 수렴에 유리(진자 감쇠 없이 2회 내 착지).
+
+## 교실 시리즈 검증 강화 v2 (2026-09-23 등재 — ep01 출고 후 사용자 실측 피드백 5종)
+
+**사용자 피드백 원문 요지**: ①의자 배치가 너무 촘촘하다 ②배치가 사다리꼴이 되었다가 한다(컷 간 불일치) ③사람들 앉아 있는 모습이 이상하다 ④스토리가 왔다 갔다 한다 ⑤대화 씬이 어색하다.
+**근본 구조 인식**: ①②의 근원은 **패널이 아니라 S-1 플레이트**다 — 패널은 SCENE_REFS로 플레이트 그리드를 상속받으므로, 그리드 결함은 플레이트 게이트에서 먼저 차단해야 한다(플레이트 우선 게이트, 아래 BL-18/19 참조).
+
+### BL-18 좌석 그리드 기하 계약 (사다리꼴·비틀림 방지) — 실측: 사용자 "사다리 꼴 배치가 되었다가"
+- **표준 긍정 절(EN, 단일 문장 — 교실 좌석이 프레임에 조금이라도 보이는 모든 컷 주입)**: "the student desks form a strict rectangular grid of exactly 4 columns by 6 rows — every column runs exactly parallel to the side walls with zero sideways stagger or ladder-like offset between consecutive rows, every row runs exactly perpendicular to the side walls, and all desks are identical in size with uniform spacing"
+- **측정 기준(validator 무시각)**: 책상 상판 에지 검출(허프/래칫) → ①열 직선 기울기 상호 편차 **≤3°** ②같은 열 내 인접 책상의 횡방향 오프셋 **≤책상 폭 15%**(초과=사다리꼴) ③플레이트 기준 격자 대비 패널 격자 상관.
+- **적용 조건**: 좌석 그리드가 보이는 W/M 컷 전부 + **S-1 플레이트 렌더 시 필수(플레이트 우선 게이트)**.
+- **라우팅**: 패널에서 발견 시 [RE-RENDER]·플레이트에서 발견 시 **플레이트 재렌더 후 패널 발주**(패널만 고쳐도 상속으로 재발).
+
+### BL-19 좌석 밀도·통로 계약 (촘촘함 방지) — 실측: 사용자 "의자 배치가 너무 촘촘하고"
+- **표준 긍정 절(EN, 단일 문장 — BL-18과 세트로 주입)**: "the seating is generously spaced with clear readable floor gaps on all four sides of every desk, the two inner aisles between the column pairs and the wall-side walking gaps are each clearly open at least sixty percent of a desk width, and no desk or chair touches or overlaps its neighbor"
+- **측정 기준**: ①인접 책상 간 바닥 노출 간격 ≥ 책상 폭 25%(전경 기준) ②통로 폭 ≥ 책상 폭 60% ③프레임 하단 1/3에서 좌석·책상 점유 면적 ≤70% ④의자-책상 물림·접촉 0건.
+- **적용 조건**: BL-18 동일 + 플레이트. **주의**: 4열×6행=24석 설정은 캐논(23번 자리 좌표)이므로 석수를 줄이지 않고 **간격·통로로 해결**한다.
+- **라우팅**: 플레이트 → 플레이트 재렌더 / 패널 → [RE-RENDER].
+
+### BL-20 착석 포즈 계약 — 실측: 사용자 "앉아 있는 모습이 조금 이상하고"
+- **표준 긍정 절(EN, 단일 문장 — 착석 인물이 있는 모든 컷 주입)**: "every seated person sits with hips fully on the chair seat, back upright against the backrest, exactly two feet flat on the floor, thighs and shins meeting at a natural right angle, shoulders level clearly above the desk-height line, and body proportions consistent with the desk and chair scale"
+- **측정/판정**: ①골반-좌면 접촉(떠 있는 허벅지·무릎 걸침 금지) ②허벅지-정강이 각 90°±25° ③발 2개 접지 ④어깨선 ≥ 책상 상판 ⑤신체:의자 스케일 일치(등받이 폭 ≈ 어깨 폭 ±20%) ⑥BL-13/14(2팔 2손·가구 밖) 승계.
+- **판정 주체**: 무시각은 ⑤⑥만 — ①~④는 **V-게이트 시각 판정**(측정 불가축 명시).
+- **라우팅**: [RE-RENDER](포즈=구도 클래스 — PIL 불가).
+
+### BL-21 대화 스테이징 계약 — 실측: 사용자 "대화 씬도 어색한 부분이 많아"
+- **표준 긍정 절(EN, 단일 문장 — 2인 이상 대화 컷 주입)**: "in every conversation panel the speaker's eyeline points directly at the listener's actual position in the frame, the listener shows a readable reaction (gaze direction or expression) in the same panel or the immediately following panel, and the balloon sits closest to its own speaker with its tail not crossing the other character's face"
+- **측정/판정**: ①화자 시선 연장선이 청자 머리 영역 도달(시선축 편차 ≤15°) ②교대 2라운드 이상 대화에서 각 전환 시 반응 동반 ③오프패널 발화 꼬리 방향 = 화자 실위치(기존 lettering 규약 승계) ④같은 대화 블록 내 화자-청자 좌우 위치 뒤바뀜 0(180° 룰 — BL-10 v2 승계).
+- **판정 주체**: 콘티 게이트(샷리스트 단계 — 시선·반응 비트 배치 확인) + V-게이트(렌더 후 시각).
+- **라우팅**: 콘티 단계 위반 → panel-director 재지시 / 렌더 후 → [RE-RENDER].
+
+### N-축 서사 진행 단조성 (콘티·대본 게이트 — 렌더 외) — 실측: 사용자 "스토리도 왔다 갔다 하고 있어"
+- **정의**: 회차를 신 상태 테이블(장소·시간·등장인·각자 아는 것)로 쪼개고 **컷마다 상태 변화를 강제**한다.
+- **규칙 4조**:
+  1. **정보 되감기 금지**: 이미 확정된 사실을 미지처럼 재질문·재탐색하는 컷 0건 허용.
+  2. **질문-차단 사이클 ≤2회**: 같은 의문을 묻고 막히는 반복은 회차당 2회 이하(3회차부터는 질문의 '내용'이 바뀌어야 함).
+  3. **장면 재방문 신정보 의무**: 같은 (장소×인물조합) 재방문 시 이전 방문 대비 새 정보·새 상태 동반.
+  4. **청크 목표 단일**: 각 청크(10/10/10/4)는 1개의 서사 목표만 갖는다 — 청크 내 목표 전환·회귀 금지.
+- **측정 시점**: episode-outliner 비트시트 → script-editor 교정 시 N-축 자가검증 표 부기, 오케스트레이터가 스폰 프롬프트로 요구.
+- **판정**: 위반 컷 → 대본 수정(재렌더 아님 — 상류 피드백).
+
+### V-게이트 체크리스트 개정 (교실 시리즈 — 기존 항목 + 4항목 추가)
+기존(좌표·SFX·신체·인원·텍스트·소품) + **⑪좌석 그리드 직교성·사다리꼴 여부** + **⑫통로·간격 가독(촘촘함)** + **⑬착석 포즈 자연성(골반·각도·발·스케일)** + **⑭대화 시선쌍·반응 비트**.
+
+### 소급 적용 규칙
+- **ep01 핀 컷은 동결**(재렌더 금지 원칙 승계) — 다만 사용자가 원하면 국소 수리 후보만 별도 제시(플레이트 상속 결함은 전면 재렌더 비용 경고 필수).
+- **ep02 발주 전 필수 절차**: ①PLATE_A/B/C를 BL-18/19 기준으로 재게이트 — 불통과 시 **플레이트부터 재렌더**(간격 강화 문구) 후 패널 착수 ②샷리스트 단계 BL-21·N-축 콘티 게이트 ③모든 매니페스트에 BL-18~21 긍정 절 자동 주입(본 원장 운용 규칙 1).
+
+## 교실 시리즈 검증 강화 v2.1 (2026-09-23 2차 — ep01 독자 실측 추가 3종)
+
+**피드백 원문 요지**: ①책상에 아이들이 까득 안 앉았는데 "자리가 없다"고 나온다 ②벽쪽에서 사람 없이 손만 나온다 ③아이들이 칠판 쪽에 앉았다가 반대쪽에 앉는다.
+
+### BL-22 시각-서사 인원 밀도 정합 (군집 컷 점유율) — 실측: ep01 panel_001(15~20% vs 대사 '자리 없음')·011·016
+- **결함 구조**: 대사·설정이 만석/군집을 요구해도 **렌더러가 빈 플레이트 참조를 우선해 좌석을 비워 둔다** (SCENE_REFS 우선 원칙의 역효과 — 참조가 "빈 교실"이면 텍스트의 "꽉 찬"이 무시됨). 프롬프트에 "packed crowd"를 써도 점유율 15~25%로 렌더 실측.
+- **표준 긍정 절(EN, 단일 문장 — 군집/만석 컷 주입)**: "the seat grid is visibly populated — at least 80 percent of the 24 desks each show a seated generic student in plain uniform seen from behind or softly out of focus, with only the marked empty seat (and any story-specified empty seats) left vacant"
+- **구조 해법(플레이트 우선)**: 군집 컷은 빈 플레이트 대신 **만석 플레이트(PLATE_*_FULL — 24석 전부 착석 제네릭 학생)**를 S-1에서 사전 렌더해 SCENE_REFS로 주입한다. 참조가 이미 찬 교실이면 점유율이 유지된다(신원 없는 제네릭이라 캐릭터 일관성 축과 무충돌). 만석 플레이트는 BL-18/19(그리드·간격)·BL-20(착석 포즈) 게이트를 통과해야 합격.
+- **측정 기준**: V-게이트 시각 측정 — 대사가 만석/자리 없음을 주장하는 컷의 점유율 **≥80%**, 군집 배경 컷(수업·군집 이동) **≥60%**. 무시각 측정 불가축 명시.
+- **라우팅**: 미달 시 [RE-RENDER] + 만석 플레이트 참조로 교체.
+
+### BL-11-CLS 유령 손 강화 (교실 군집 변형) — 실측: ep01 panel_020 좌하단(연결 몸 없는 손)
+- **실측**: "복수의 손" 컷에서 손이 벽/공간에서 직접 나옴 — 반해상도 컨택트시트 V-게이트와 무시각 검증(BL-13/14 측정 불가 선언)이 모두 놓침.
+- **표준 긍정 절(EN, 단일 문장 — 손 군집 컷 주입)**: "every visible hand emerges from a sleeved forearm connected to a seated student's shoulder within the same panel — hands never sprout from walls, desks edges, or empty air, and each hand-owner is at least partially visible (head or shoulders) near the hand"
+- **검증 강화**: 손 군집 컷은 **원해상도(반해상도 컨택트시트 아님) V-게이트 필수** — 컨택트시트는 결함 스크리닝용이고 손-소유자 연결 판정은 full-res 열람에서만 유효(실측).
+- **라우팅**: [RE-RENDER].
+
+### BL-23 착석 방향·위치 컷 간 고정 — 실측: 사용자 "칠판 쪽으로 앉았다가 반대쪽으로"
+- **결함 구조**: 착석 인물의 '바라보는 방향'과 '앉은 열 위치'가 컷 간 뒤집혀 보임. 원인 후보 2 — ①축이 다른 플레이트(A축=정면 향한 등, B축=전경 등)의 정상 차이를 독자가 뒤집힘으로 오인 ②실제로 착석 방향/열 위치가 컷 간 불일치. ep01 표본 검사(001·011·016·020·021)에서는 축 준수 확인 — 다만 **독자 오인 방지도 게이트 목표**에 포함한다.
+- **표준 긍정 절(EN, 단일 문장 — 착석 인물 컷 주입)**: "every seated student always faces the front blackboard wall of the classroom, and occupied seat columns keep the same physical positions across all panels (window-side column nearest the windows in every PLATE_C shot, seat grid inherited unchanged from the reference plate)"
+- **측정 기준**: V-게이트 — ①착석 인물 시선·신체 방향 = 전방(칠판 벽) 방향, 카메라 향한 얼굴 금지(후면 샷 제외) ②같은 회차 내 착석 열 배치 고정 ③**독자 혼동 완화**: 축 전환이 있는 연속 컷에는 정지 신호(샷 타입 변화·거터) 수반 확인.
+- **라우팅**: 실제 불일치 [RE-RENDER] / 연출 문제는 샷리스트 단계 panel-directer 재지시.
+
+### V-게이트 체크리스트 개정 (v2.1 — 기존 + 2항목)
+**⑮군집 점유율(대사 정합)** + **⑯손-소유자 연결(원해상드 전용 축 — 손 컷은 full-res 열람)**.
+
+### PR-03 플레이트 게이트 체크리스트 전 항목 의무화 (v10.2 사이클 실측 — 2026-09-23 등재)
+- **사고**: FULL 플레이트 v2 V-게이트에서 점유율·공석·손·포즈만 확인하고 **BL-18 그리드 기하(사다리꼴)·행 분포(전 행 착석)를 점검하지 않아** 결함 플레이트가 핀되고 6컷 재렌더로 상속 — 독자 실측 "첫 사진부터 사다리꼴·뒤쪽 편중 착석"으로 재발견.
+- **규칙**: 플레이트(EMPTY/FULL 모두) 게이트는 **BL-18·19·20·22·23(+축·손·텍스트) 전 항목을 빠짐없이 실행**한 뒤에만 핀한다 — 부분 점검 핀 금지. 게이트 질문 목록이 원장 항목과 1:1 대응해야 한다.
+- **문구 교훈**: "정렬(aligned)" 같은 추상 지시는 실효 낮음 — **행 기준 묘사**("every desk sits EXACTLY behind the desk in front of it, zero sideways offset") + **원근 수렴 명시** + **분포 명시**("every row from the nearest front row to the back row")로 쓴다(v3 프롬프트 채택).
+
+### BL-08 비고 (2026-09-23 — antigravity 1.2.9 SFX 픽셀 타겟 불수렴 실측)
+- ep01 020 「사각사각」 스팬: 명시 픽셀 타겟(153~187px) **7회 연속 미수렴**(44.8→33.5→25.2→15.3→22.2→22.5→28.7%W 진자·역퇴행 포함) — 백엔드 고정축 한계로 확정. PIL 사후 리사이즈는 PR-01로 폐쇄.
+- **후속 회차 지침**: SFX는 ①평면 단색 배경 위에 배치해 사후 리사이즈 검토 가능하게 하거나 ②2음절 이내 짧은 SFX로 설계하거나 ③스펙 밴드를 넓게 잡고 FLAG 허용 범위로 관리한다. 4음절+복잡 배경 조합은 피한다.
+
+### PR-04 그리드 기하·행 분포의 자동 게이트 무효 선언 + 후보 선택 절차 (ep01 v10.2 3차 실측 — 2026-09-23 등재)
+- **실측**: FULL 플레이트/패널의 사다리꼴·뒤편중 착석에 대해 ①비전 모델이 "완벽한 직선" 환각 판정 2회 ②BL-22 점유율 산법(전체 navy 비율)이 행별 편중을 못 잡음(전경 공석+후열 밀집을 "178%"로 오판) ③프롬프트 재렌더 룰렛 2사이클 실패 — 동일 결함 3회 사용자 신고.
+- **규칙**: ① **그리드 기하·행 분포의 최종 판정자는 사용자**다 — 자동 게이트(비전·레일 피팅)는 스크리닝일 뿐 핀 근거가 아니다. ② BL-22 측정은 **행별 3분할(전경 1/3·중경·후경) navy 비율**로 재정의 — 전경 1/3이 군집 컷에서 공석이면 점유율 계약 실패(전체 합계 무관). ③ **FULL 플레이트 채택 절차**: 프롬프트 변형 4~5종 후보 다발 렌더 → 라벨 컨택트시트 → **사용자 선택** → 선택본만 핀·패널 상속. 패널도 동일(사용자 확인 전 재봉인 금지).
+
+### BL-22 확장 — 패턴 스테이징 계약 (ep01 012 실측 — 2026-09-23 등재)
+- **실측**: 「다들, 저 통로는 안 지나가네」 대사 컷이 '대부분 착석' 상태만 보여줌 — 회피 패턴의 시각 증거 부재(사용자 지적).
+- **규칙**: 대사가 주장하는 **시각 패턴**(회피·우역·혼잡·정지 등 행동 양상)은 프레임 안에 **명시적 증거**로 스테이징된다 — 상태(앉아 있음 등)만으로는 불충분. 패턴 대조조(예: 걷는 통로 vs 빈 통로)가 한 프레임에 함께 보여야 한다.
+- **표준 절(예시 — 012형)**: "in the CENTER aisle three generic students walk away from the camera in a loose line, while the window-side aisle at the RIGHT is completely empty of walkers from front to back — the walking flow conspicuously avoids that aisle"
+- **판정**: V-게이트 — 대사 패턴 요소가 프레임에서 식별 가능한지(무시각 불가축 — 시각 판정).
+
+### BL-23 비고 — 보케·아웃포커스 군집에도 방향 계약 적용 (ep01 001 DOF 실측 — 2026-09-23)
+- **실측**: DOF 포커싱 컷에서 흐릿한 배경 군집이 문(카메라) 쪽을 향해 좌정 + 최전경 학생이 의자에 반대로 착석 — "흐려서 방향 판정 면제"가 성립하지 않음(리본·어깨선·무릎 방향이 방향을 노출).
+- **규칙**: 아웃포커스 군집에도 BL-23 착석 방향(전방 칠판 고정)을 그대로 적용한다. 문가 카메라 구도에서는 "seen from the door the crowd shows backs and backs of heads — no student faces the door" 절을 상시 주입.
+
+### BL-19 비고 — 공석 절은 "사람 없음"이지 "가구 없음"이 아니다 (ep01 012 v2 실측 — 2026-09-23)
+- **실측**: "창가 통로 완전 공석" 지시가 창가 열 책상 삭제로 렌더됨 — 통로가 넓은 빈 바닥처럼 읽힘(사용자 지적 "책상들이 없어졌어").
+- **규칙**: 공석·비어 있음 계약에는 반드시 "empty of PEOPLE — all desks remain in place and occupied/unoccupied as specified" 병기. 통로 판독은 양쪽 책상 열이 존재해야 성립한다.

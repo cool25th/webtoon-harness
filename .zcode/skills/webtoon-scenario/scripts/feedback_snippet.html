@@ -1,0 +1,144 @@
+<div id="fbHint" style="position:fixed;bottom:14px;right:14px;background:#b0567a;color:#fff;padding:8px 14px;border-radius:18px;font-size:13px;font-weight:700;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.4)">마우스로 그려서 결함 지적 — 0건 접수됨</div>
+<div id="fbOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:100;align-items:center;justify-content:center">
+  <div style="background:#1d1d24;border:1px solid #3a3a48;border-radius:14px;padding:16px;max-width:94vw;display:flex;gap:16px;align-items:flex-start">
+    <div>
+      <div id="fbStage" style="position:relative;display:inline-block;border-radius:10px;overflow:hidden;border:1px solid #444">
+        <img id="fbImg" style="display:block;max-height:74vh;max-width:60vw">
+        <canvas id="fbCanvas" style="position:absolute;inset:0;cursor:crosshair"></canvas>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <button id="fbPen" style="padding:6px 14px;border-radius:14px;border:1px solid #b0567a;background:#b0567a;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">그리기</button>
+        <button id="fbDotM" style="padding:6px 14px;border-radius:14px;border:1px solid #3a3a48;background:#141419;color:#ccc;font-size:12.5px;cursor:pointer">점</button>
+        <button id="fbClear" style="padding:6px 14px;border-radius:14px;border:1px solid #3a3a48;background:#141419;color:#ccc;font-size:12.5px;cursor:pointer">지우기</button>
+        <span style="color:#888;font-size:11.5px" id="fbModeNote">이미지 위를 그려서 결함을 표시하세요</span>
+      </div>
+    </div>
+    <div style="width:260px;color:#e8e6e1;font-family:system-ui,sans-serif">
+      <div style="font-weight:800;margin-bottom:4px">결함 지적</div>
+      <div id="fbPanel" style="color:#8fd3ff;font-size:14px;font-weight:700;margin-bottom:10px"></div>
+      <div style="font-size:12px;color:#888;margin-bottom:5px">결함 태그</div>
+      <div id="fbTags" style="margin-bottom:12px"></div>
+      <div style="font-size:12px;color:#888;margin-bottom:5px">심각도</div>
+      <div style="margin-bottom:12px">
+        <label style="margin-right:10px;font-size:13px"><input type="radio" name="fbSev" value="minor" checked> 사소</label>
+        <label style="margin-right:10px;font-size:13px"><input type="radio" name="fbSev" value="major"> 거슬림</label>
+        <label style="font-size:13px"><input type="radio" name="fbSev" value="critical"> 치명</label>
+      </div>
+      <textarea id="fbNote" placeholder="메모 (선택)" style="width:100%;height:56px;background:#141419;color:#eee;border:1px solid #3a3a48;border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="fbSend" style="flex:1;background:#b0567a;color:#fff;border:0;border-radius:8px;padding:10px;font-weight:800;font-size:14px;cursor:pointer">지적 보내기</button>
+        <button id="fbCancel" style="background:#333;color:#ccc;border:0;border-radius:8px;padding:10px;cursor:pointer">취소</button>
+      </div>
+      <div id="fbStatus" style="font-size:12px;color:#8fd3ff;margin-top:8px;min-height:16px"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var EP = "__EPISODE__", ENDPOINT = "__ENDPOINT__";
+  var TAGS = ["구도","해부학/포즈","대사/말풍선","배경/소품","방향/축","인물 수","크기/비율","기타"];
+  var count = 0, cur = null, mode = "pen", drawing = false, strokes = [], dot = null;
+  var stage = document.getElementById("fbStage"), img = document.getElementById("fbImg"),
+      cv = document.getElementById("fbCanvas"), ctx = cv.getContext("2d"),
+      hint = document.getElementById("fbHint"), ov = document.getElementById("fbOverlay"),
+      tagbox = document.getElementById("fbTags");
+  TAGS.forEach(function(t){
+    var b = document.createElement("button");
+    b.textContent = t;
+    b.style.cssText = "margin:0 6px 6px 0;padding:5px 11px;border-radius:13px;border:1px solid #3a3a48;background:#141419;color:#ccc;font-size:12px;cursor:pointer";
+    b.onclick = function(){
+      Array.prototype.forEach.call(tagbox.children, function(c){ c.style.background="#141419"; c.style.color="#ccc"; });
+      b.style.background = "#b0567a"; b.style.color = "#fff"; cur.tag = t;
+    };
+    tagbox.appendChild(b);
+  });
+  function fit(){ cv.width = stage.clientWidth; cv.height = stage.clientHeight; redraw(); }
+  function redraw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.strokeStyle = "#ff4d6d"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    strokes.forEach(function(st){
+      ctx.beginPath();
+      st.forEach(function(p,i){
+        var x = p.x/100*cv.width, y = p.y/100*cv.height;
+        if (i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
+      });
+      if (st.length === 1){
+        var p0 = st[0];
+        ctx.arc(p0.x/100*cv.width, p0.y/100*cv.height, 3, 0, 7);
+        ctx.fillStyle = "#ff4d6d"; ctx.fill();
+      }
+      ctx.stroke();
+    });
+    if (dot){
+      ctx.beginPath();
+      ctx.arc(dot.x/100*cv.width, dot.y/100*cv.height, 8, 0, 7);
+      ctx.strokeStyle = "#4da3ff"; ctx.lineWidth = 3; ctx.stroke();
+    }
+  }
+  function pos(ev){
+    var r = cv.getBoundingClientRect();
+    return { x: +(((ev.clientX-r.left)/r.width)*100).toFixed(2),
+             y: +(((ev.clientY-r.top)/r.height)*100).toFixed(2) };
+  }
+  cv.addEventListener("pointerdown", function(ev){
+    if (!cur) return;
+    var p = pos(ev);
+    if (mode === "pen"){ drawing = true; strokes.push([p]); }
+    else { dot = p; redraw(); }
+  });
+  cv.addEventListener("pointermove", function(ev){
+    if (!drawing) return;
+    strokes[strokes.length-1].push(pos(ev)); redraw();
+  });
+  window.addEventListener("pointerup", function(){ drawing = false; });
+  document.getElementById("fbPen").onclick = function(){
+    mode = "pen"; this.style.background="#b0567a"; this.style.color="#fff";
+    var d = document.getElementById("fbDotM"); d.style.background="#141419"; d.style.color="#ccc";
+    document.getElementById("fbModeNote").textContent = "이미지 위를 그려서 결함을 표시하세요";
+  };
+  document.getElementById("fbDotM").onclick = function(){
+    mode = "dot"; this.style.background="#4da3ff"; this.style.color="#fff";
+    var p = document.getElementById("fbPen"); p.style.background="#141419"; p.style.color="#ccc";
+    document.getElementById("fbModeNote").textContent = "클릭 한 번으로 점을 찍습니다";
+  };
+  document.getElementById("fbClear").onclick = function(){ strokes=[]; dot=null; redraw(); };
+  window.addEventListener("resize", function(){ if (ov.style.display==="flex") fit(); });
+  document.querySelectorAll(".imgwrap img").forEach(function(card){
+    card.style.cursor = "crosshair";
+    card.addEventListener("click", function(){
+      cur = { panel: EP, tag: null }; strokes = []; dot = null;
+      var sec = card.closest(".cut");
+      if (sec){ var m = sec.querySelector(".num"); if (m) cur.panel = "C" + m.textContent.replace("C",""); }
+      document.getElementById("fbPanel").textContent = cur.panel;
+      img.onload = function(){ fit(); };
+      img.src = card.src;
+      ov.style.display = "flex";
+    });
+  });
+  document.getElementById("fbCancel").onclick = function(){ ov.style.display = "none"; };
+  document.getElementById("fbSend").onclick = function(){
+    if (!cur.tag){ document.getElementById("fbStatus").textContent = "결함 태그를 선택하세요"; return; }
+    if (!strokes.length && !dot){ document.getElementById("fbStatus").textContent = "이미지 위에 그리거나 점을 찍으세요"; return; }
+    var sev = document.querySelector("input[name=fbSev]:checked");
+    var pts = [].concat.apply([], strokes); if (dot) pts.push(dot);
+    var bbox = null;
+    if (pts.length){
+      var xs = pts.map(function(p){ return p.x; }), ys = pts.map(function(p){ return p.y; });
+      bbox = { x0: Math.min.apply(0,xs), y0: Math.min.apply(0,ys), x1: Math.max.apply(0,xs), y1: Math.max.apply(0,ys) };
+    }
+    var payload = { story: "그 자리는 비워 둬", episode: EP, panel: cur.panel, image_version: "current",
+      mode: mode, strokes: strokes, point: dot, bbox: bbox, tag: cur.tag,
+      severity: sev ? sev.value : "minor", note: document.getElementById("fbNote").value,
+      timestamp: new Date().toISOString(), status: "open", issue_id: EP + "-" + cur.panel + "-" + Date.now() };
+    fetch(ENDPOINT, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (j.ok){
+          count++; hint.textContent = "마우스로 그려서 결함 지적 — " + count + "건 접수됨";
+          document.getElementById("fbStatus").textContent = "접수 완료 — 이슈 " + payload.issue_id;
+          setTimeout(function(){ ov.style.display = "none"; document.getElementById("fbNote").value = ""; }, 700);
+        } else { document.getElementById("fbStatus").textContent = "전송 실패: " + (j.error || "?"); }
+      }).catch(function(e){ document.getElementById("fbStatus").textContent = "서버 연결 실패: " + e; });
+  };
+})();
+</script>
