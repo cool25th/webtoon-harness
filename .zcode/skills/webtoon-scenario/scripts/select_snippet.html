@@ -1,0 +1,41 @@
+<style>
+figure.takefig{cursor:pointer;position:relative;border:2px solid transparent;border-radius:10px;transition:border-color .15s}
+figure.takefig:hover{border-color:#666}
+figure.takefig.selected{border-color:#4da3ff;box-shadow:0 0 0 2px #4da3ff}
+figure.takefig.selected::after{content:'✔ 선택';position:absolute;top:8px;right:8px;background:#4da3ff;color:#fff;font-weight:800;font-size:12px;padding:3px 9px;border-radius:8px}
+.nonebtn{margin:6px 0 18px;background:#333;color:#ccc;border:1px solid #555;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+.nonebtn.rejected{background:#b0567a;color:#fff;border-color:#b0567a}
+</style>
+<script>
+(function(){
+  var ENDPOINT="__ENDPOINT__";
+  var EPISODE="__EPISODE__";
+  var sent={};
+  function post(gid, take){
+    return fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({type:"selection",episode:EPISODE,panel:gid,take:take||"none",
+        timestamp:new Date().toISOString(),status:"open",issue_id:"sel-"+gid+"-"+Date.now()})});
+  }
+  document.querySelectorAll("figure.takefig").forEach(function(fig){
+    fig.addEventListener("click",function(){
+      var gid=fig.dataset.gid, take=fig.dataset.take;
+      document.querySelectorAll('figure.takefig[data-gid="'+CSS.escape(gid)+'"]').forEach(function(f){f.classList.remove("selected")});
+      fig.classList.add("selected");
+      var btn=document.querySelector('.nonebtn[data-gid="'+CSS.escape(gid)+'"]');
+      if(btn)btn.classList.remove("rejected");
+      post(gid,take).then(function(){ sent[gid]=take; });
+    });
+  });
+  document.querySelectorAll(".nonebtn").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var gid=btn.dataset.gid;
+      document.querySelectorAll('figure.takefig[data-gid="'+CSS.escape(gid)+'"]').forEach(function(f){f.classList.remove("selected")});
+      btn.classList.add("rejected");
+      post(gid,"none").then(function(){ sent[gid]="none"; });
+    });
+  });
+  window.addEventListener("beforeunload",function(e){
+    if(Object.keys(sent).length){ e.preventDefault(); e.returnValue=""; }
+  });
+})();
+</script>

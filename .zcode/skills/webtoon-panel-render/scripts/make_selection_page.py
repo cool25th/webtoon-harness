@@ -19,6 +19,10 @@ def main():
     ap.add_argument('--note', default='')
     ap.add_argument('--item', action='append', required=True,
                     help='그룹ID|설명|이미지경로')
+    ap.add_argument('--selectable', default=None, metavar='ENDPOINT',
+                    help='POST 엔드포인트 — 그림 클릭으로 선택 기록(선택 하이라이트+없음 버튼)')
+    ap.add_argument('--episode', default='ep01',
+                    help='--selectable 로 기록할 회차 — 선택 로그의 episode 값에 쓰인다')
     args = ap.parse_args()
 
     groups = OrderedDict()
@@ -38,8 +42,12 @@ def main():
         for desc, path in items:
             b64 = base64.b64encode(open(path, 'rb').read()).decode()
             name = html.escape(os.path.basename(path))
-            cards[-1] += (f'<figure><img src="data:image/png;base64,{b64}">'
+            sel = ' selectable' if args.selectable else ''
+            cards[-1] += (f'<figure class="takefig{sel}" data-gid="{html.escape(gid)}" data-take="{html.escape(desc)}">'
+                          f'<img src="data:image/png;base64,{b64}">'
                           f'<figcaption><b>{html.escape(desc)}</b><br><code>{name}</code></figcaption></figure>')
+        if args.selectable:
+            cards[-1] += ('<button class="nonebtn" data-gid="' + html.escape(gid) + '">이 컷은 마음에 드는 게 없음</button>')
         cards[-1] += '</div>'
 
     doc = f"""<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
@@ -57,7 +65,15 @@ code{{font-size:11px;color:#777}}
 <h1>{html.escape(args.title)}</h1>
 <p class="note">{html.escape(args.note)}</p>
 {''.join(cards)}
+__SELECTJS__
 </body></html>"""
+    if args.selectable:
+        seljs = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'webtoon-scenario', 'scripts', 'select_snippet.html'), encoding='utf-8').read()
+        seljs = seljs.replace('__ENDPOINT__', args.selectable)
+        seljs = seljs.replace('__EPISODE__', html.escape(args.episode))
+        doc = doc.replace('__SELECTJS__', seljs)
+    else:
+        doc = doc.replace('__SELECTJS__', '')
     open(args.out, 'w').write(doc)
     print(f'selection page: {args.out} ({os.path.getsize(args.out)//1024}KB, {len(args.item)} items, {len(groups)} groups)')
 
