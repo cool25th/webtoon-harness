@@ -331,3 +331,9 @@
 ### BL-19 비고 — 공석 절은 "사람 없음"이지 "가구 없음"이 아니다 (ep01 012 v2 실측 — 2026-09-23)
 - **실측**: "창가 통로 완전 공석" 지시가 창가 열 책상 삭제로 렌더됨 — 통로가 넓은 빈 바닥처럼 읽힘(사용자 지적 "책상들이 없어졌어").
 - **규칙**: 공석·비어 있음 계약에는 반드시 "empty of PEOPLE — all desks remain in place and occupied/unoccupied as specified" 병기. 통로 판독은 양쪽 책상 열이 존재해야 성립한다.
+
+### BL-24 시대착오 차단절 (auto 트랙 이식 — 2026-09-30 등재, 결함 코드 defect-checklist B9)
+- **실측 이력(출발 트랙 webtoon-auto)**: 시대물《두 번째 판》(2005년 배경)에서 LLM 재량으로는 negative에 시대 차단이 들어간 컷이 2.2%뿐이었으나, 캐논의 `era_negative` 태그를 **코드가 비회상 컷 negative에 강제 병합**하는 계약으로 바꾼 뒤 신규 생산 공백 **1/170(0.6%)** — 계약 없는 레거시는 280/1412(19.8%). "재량"이 아니라 "계약"이어야 듣는다.
+- **표준 긍정 절(EN, 단일 문장)**: "Every object, technology, vehicle, fashion and hairstyle belongs to the {era} period — nothing from outside the era appears" + 스타일 바이블 `era_negative` 토큰 나열(예: "no smartphones, no modern electronics, no contemporary brand logos").
+- **적용 조건**: 시나리오/스타일 바이블에 `era_negative`가 정의된 시대물의 **회상·플래시백이 아닌 전 컷** — 정의 시점부터 모든 매니페스트에 prompt-smith가 상시 주입한다(시대물이 아니면 이 절은 적용되지 않는다).
+- **면제**: 회상·플래시백 컷(시점 차이가 서사적 의도 — auto의 flashback_cut_ids 면제와 같은 원리).
