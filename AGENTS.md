@@ -38,7 +38,16 @@ webtoon-series/            ← 워크스페이스 (여기서 ZCode 실행)
 - 독립 작업은 `run_in_background: true` 병렬, 의존 작업은 순차. `sleep` 폴링 금지.
 - 서브에이전트 간 직접 통신 금지 — 산출물 파일 + 오케스트레이터 중계.
 
+## 트랙 간 교차 개선 관례 (auto 파이프라인과 — 2026-09-30)
+
+자매 트랙 `webtoon-auto`(자동 파이프라인, 상위 webtoon 저장소)과 결함 어휘·개선을 공유한다. 결함 축 분류는 상위 저장소의 `../DEFECT_TAXONOMY.md`(이 저장소 A0~F3·C1~C8·BL·스토리북 태그 ↔ auto 태그 매핑)가 SSOT다.
+
+1. **교차 한 줄 질문** — 결함 수리·게이트 신설·프롬프트 개정 시 "이 결함 축이 auto 트랙에도 해당되는가?"를 묻고 결과를 상위 저장소 `../CROSS_TRACK.md` 원장에 한 줄 남긴다(제안/비해당+근거).
+2. **이식의 4세트** — 결함이 범용 축(신원·해부학·인원·말풍선·구도·배경·시대·화풍·기술)이면 기존 3세트(SKILL 개정 + 회차 수리 + 원장 기록)에 4번째 세트(auto 원장·게이트 반영 검토)를 넣는다.
+
 ## 변경 이력
+
+- 2026-09-30: **트랙 간 교차 개선 관례 신설** — 자매 트랙 webtoon-auto와 결함 어휘 매핑(상위 저장소 `DEFECT_TAXONOMY.md`)+교차 원장(`CROSS_TRACK.md`)으로 이식(패턴·계약 이전)을 기록·추적한다. 교차 한 줄 질문·4세트 반영 규칙 추가.
 
 - 2026-09-27: **v10.5 — 선택 게이트 클릭 선택(SelectionFeedback)** ①`make_selection_page.py`에 `--selectable ENDPOINT`(그림 클릭 → 선택 하이라이트 + 그룹당 "이 컷은 마음에 드는 게 없음" 버튼)와 `--episode` 추가 — 클릭 결과가 `feedback_server.py`의 `/api/feedback`으로 `type:"selection"` JSONL 항목으로 쌓인다(승격·재롤의 근거가 말sito가 아니라 데이터가 된다). 스니펫은 `webtoon-scenario/scripts/select_snippet.html` 단일 파일. ②커밋 전 정리 2건: 중복돼 있던 `isfile` 검사 1개 제거, 스니펫에 하드코딩돼 있던 `episode:"ep01"`을 `__EPISODE__` placeholder로 교체(ep02+ 선택이 ep01로 기록되던 오염 방지 — SKILL.md에 "ep02 이상은 `--episode` 필수" 명시). 근거 실측: 《그 자리는 비워 둬》 ep01 3테이크 선택 게이트 운용 중 수집 구멍 발견.
 
